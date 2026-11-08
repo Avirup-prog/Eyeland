@@ -58,7 +58,7 @@ export default function App() {
   const isDraggingFileRef = useRef(false);
   const dragLeaveTimeoutRef = useRef(null);
 
-  // Inactivity tracking (sleep after 8s of no movement)
+  // Inactivity tracking (sleep after 3 minutes of no movement)
   const lastActivityRef = useRef(Date.now());
   const lastCursorPosRef = useRef({ x: 0, y: 0 });
 
@@ -131,9 +131,9 @@ export default function App() {
     }
   };
 
-  // Inactivity Interval Monitor (8 seconds)
+  // Inactivity Interval Monitor (3 minutes of inactivity)
   useEffect(() => {
-    const INACTIVITY_TIMEOUT_MS = 8000;
+    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
     const interval = setInterval(() => {
       const idleTime = Date.now() - lastActivityRef.current;
       if (idleTime >= INACTIVITY_TIMEOUT_MS) {
@@ -176,21 +176,21 @@ export default function App() {
         const dy = Math.max(0, data.cursorY - islandTop);
         const inDetectionRadius = Math.abs(dx) <= 310 && dy <= 360;
 
-        if (inDetectionRadius) {
-          // Detect cursor movement to wake up & reset inactivity timer
-          const dist = Math.hypot(
-            data.cursorX - lastCursorPosRef.current.x,
-            data.cursorY - lastCursorPosRef.current.y
-          );
-          if (dist > 3) {
-            lastCursorPosRef.current = { x: data.cursorX, y: data.cursorY };
-            registerUserActivity();
-          }
+        // Detect cursor movement anywhere across the OS to reset inactivity timer
+        const dist = Math.hypot(
+          data.cursorX - lastCursorPosRef.current.x,
+          data.cursorY - lastCursorPosRef.current.y
+        );
+        if (dist > 3) {
+          lastCursorPosRef.current = { x: data.cursorX, y: data.cursorY };
+          registerUserActivity();
+        }
 
+        if (inDetectionRadius) {
           // Follow cursor gaze within detection radius
           calculateGaze(data.cursorX, data.cursorY, islandCenterX, islandCenterY);
         } else {
-          // Outside detection radius: relax eyes to neutral forward gaze, don't wake up
+          // Outside detection radius: relax eyes to neutral forward gaze
           setEyeTracking({ tiltDeg: 0, offsetX: 0, offsetY: 0 });
         }
 
