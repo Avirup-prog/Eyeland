@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   showItemInFolder: (filePath) => ipcRenderer.invoke('show-item-in-folder', filePath),
   openPath: (filePath) => ipcRenderer.invoke('open-path', filePath),
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
   getFileDetails: (filePath) => ipcRenderer.invoke('get-file-details', filePath),
 
   // Real-Time System Clipboard APIs

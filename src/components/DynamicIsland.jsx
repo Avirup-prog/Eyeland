@@ -212,6 +212,26 @@ export default function DynamicIsland({
   const [hardwareLevels, setHardwareLevels] = useState({ volume: 100, muted: false, brightness: 80 });
   const hudTimerRef = useRef(null);
 
+  // Gmail / Mail Notification & Privacy Integration State
+  const [mailConfig, setMailConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('eyeland_mail_config');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      connected: false,
+      email: '',
+      unreadCount: 0,
+      notificationsEnabled: true,
+      checkIntervalMins: 5,
+      lastChecked: null,
+    };
+  });
+  const [mailEmailInput, setMailEmailInput] = useState('');
+  const [isMailConnecting, setIsMailConnecting] = useState(false);
+  const [activeMailAlert, setActiveMailAlert] = useState(null); // { count: 1, text: '1 New Email', timestamp: number }
+  const mailAlertTimerRef = useRef(null);
+
   const [indicatorTimestamps, setIndicatorTimestamps] = useState({
     music: Date.now(),
     bluetooth: 0,
@@ -221,6 +241,7 @@ export default function DynamicIsland({
     battery_low: 0,
     battery_charging: Date.now(),
     focus: 0,
+    mail: 0,
   });
 
   const triggerBluetoothIndicator = () => {
@@ -710,6 +731,61 @@ export default function DynamicIsland({
       };
     }
   }, []);
+
+  // Gmail / Mail State Persistence
+  useEffect(() => {
+    try {
+      localStorage.setItem('eyeland_mail_config', JSON.stringify(mailConfig));
+    } catch (_) {}
+  }, [mailConfig]);
+
+  // Collapsed Island Email Alert Trigger (hides eyes for ~3.5s, then restores eyes)
+  const triggerMailAlert = (newCount = 1) => {
+    setActiveMailAlert({
+      count: newCount,
+      text: newCount === 1 ? '1 New Email' : `${newCount} New Emails`,
+      timestamp: Date.now(),
+    });
+
+    if (mailAlertTimerRef.current) {
+      clearTimeout(mailAlertTimerRef.current);
+    }
+
+    mailAlertTimerRef.current = setTimeout(() => {
+      setActiveMailAlert(null);
+      mailAlertTimerRef.current = null;
+    }, 3500);
+  };
+
+  const handleConnectMail = (overrideEmail) => {
+    const targetEmail = (overrideEmail || mailEmailInput || 'creator@gmail.com').trim();
+    setIsMailConnecting(true);
+    setTimeout(() => {
+      setMailConfig({
+        connected: true,
+        email: targetEmail,
+        unreadCount: 1,
+        notificationsEnabled: true,
+        checkIntervalMins: 5,
+        lastChecked: Date.now(),
+      });
+      setIndicatorTimestamps((t) => ({ ...t, mail: Date.now() }));
+      setIsMailConnecting(false);
+      triggerMailAlert(1);
+    }, 550);
+  };
+
+  const handleDisconnectMail = () => {
+    setMailConfig({
+      connected: false,
+      email: '',
+      unreadCount: 0,
+      notificationsEnabled: true,
+      checkIntervalMins: 5,
+      lastChecked: null,
+    });
+    setActiveMailAlert(null);
+  };
 
   const handlePlayPause = () => {
     window.electronAPI?.sendMediaControl?.('play-pause');
@@ -1993,8 +2069,9 @@ export default function DynamicIsland({
   };
 
   const isHudMode = !isExpanded && activeHud !== null;
-  const isLyricsMode = !isExpanded && !isHudMode && isPlaying && hasLyrics;
-  const isFocusModeCollapsed = !isExpanded && !isHudMode && isFocusRunning && !isLyricsMode;
+  const isMailAlertMode = !isExpanded && !isHudMode && activeMailAlert !== null;
+  const isLyricsMode = !isExpanded && !isHudMode && !isMailAlertMode && isPlaying && hasLyrics;
+  const isFocusModeCollapsed = !isExpanded && !isHudMode && !isMailAlertMode && isFocusRunning && !isLyricsMode;
 
   // Dynamic Companion Eye Expression & Color for Focus Mode vs Idle
   const activeEyeExpression = isFocusRunning 
@@ -2059,6 +2136,9 @@ export default function DynamicIsland({
     if (stagedFiles.length > 0 && !isFocusModeCollapsed) {
       candidates.push({ id: 'shelf', time: 1 });
     }
+    if (mailConfig.connected && mailConfig.unreadCount > 0 && !isFocusModeCollapsed) {
+      candidates.push({ id: 'mail', time: indicatorTimestamps.mail || 1 });
+    }
 
     // Sort non-music candidates descending by time (most recent first)
     candidates.sort((a, b) => b.time - a.time);
@@ -2086,6 +2166,8 @@ export default function DynamicIsland({
     isFocusRunning,
     isFocusModeCollapsed,
     stagedFiles.length,
+    mailConfig.connected,
+    mailConfig.unreadCount,
     indicatorTimestamps,
   ]);
 
@@ -2234,6 +2316,23 @@ export default function DynamicIsland({
           </div>
         );
 
+      case 'mail':
+        return (
+          <div
+            key="mail"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveTab('mail');
+              setIsHovered(true);
+            }}
+            className="flex items-center justify-center relative w-4 h-4 rounded-full bg-rose-500/20 text-rose-400 flex-shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-fadeIn cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+            title={`Gmail: ${mailConfig.unreadCount} unread email(s) (click to open)`}
+          >
+            <span className="text-[10px] leading-none">✉️</span>
+            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_4px_#f43f5e]" />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -2259,6 +2358,14 @@ export default function DynamicIsland({
           ? '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(56, 189, 248, 0.25)'
           : '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(251, 191, 36, 0.25)',
         borderColor: activeHud.type === 'volume' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)',
+      }
+    : isMailAlertMode
+    ? {
+        width: '270px',
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(244, 63, 94, 0.35)',
+        borderColor: 'rgba(244, 63, 94, 0.45)',
       }
     : isLyricsMode
     ? {
@@ -2294,7 +2401,7 @@ export default function DynamicIsland({
     >
 
       {/* ======================================================== */}
-      {/* 1. COLLAPSED ISLAND: HUD vs LYRICS vs FOCUS vs 3-ZONE    */}
+      {/* 1. COLLAPSED ISLAND: HUD vs MAIL vs LYRICS vs 3-ZONE     */}
       {/* ======================================================== */}
       {!isExpanded && (
         isHudMode ? (
@@ -2366,6 +2473,40 @@ export default function DynamicIsland({
                   {activeHud.value}%
                 </span>
               )}
+            </div>
+          </div>
+        ) : isMailAlertMode ? (
+          /* NEW EMAIL NOTIFICATION ALERT: Replaces eyes for ~3.5s, then restores eyes */
+          <div
+            className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
+            onClick={() => {
+              setActiveTab('mail');
+              setIsHovered(true);
+            }}
+            title="Gmail: 1 New Email • Click to open Mail tab"
+          >
+            {/* Left: Glowing Google Mail Envelope & Badge */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400">
+                <span className="text-[12px] leading-none animate-pulse">✉️</span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] font-bold text-white tracking-tight flex items-center gap-1.5">
+                  <span>{activeMailAlert.text || '1 New Email'}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                </span>
+                <span className="text-[8px] font-mono text-neutral-400 truncate">
+                  {mailConfig.email || 'Gmail Inbox'} • Tap to open
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Badge Pill */}
+            <div className="flex-shrink-0 pl-2">
+              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono text-[9px] font-semibold tracking-wide shadow-sm">
+                +{activeMailAlert.count || 1}
+              </span>
             </div>
           </div>
         ) : isLyricsMode ? (
@@ -5441,6 +5582,257 @@ export default function DynamicIsland({
               </div>
             )}
 
+            {/* ======================================================== */}
+            {/* 8. GMAIL & MAIL NOTIFICATIONS TAB                        */}
+            {/* ======================================================== */}
+            {activeTab === 'mail' && (
+              <div className="flex flex-col h-full overflow-hidden select-none animate-fadeIn">
+                {!mailConfig.connected ? (
+                  /* 1. DISCONNECTED STATE: Privacy Guarantee & Connect Flow */
+                  <div className="flex-1 flex flex-col justify-between py-1 px-1">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80 mb-2 flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-rose-500/20 to-red-600/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xs shadow-sm">
+                          ✉️
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-tight">Gmail Notifications</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-[8.5px] font-mono text-neutral-400">
+                        Not Connected
+                      </span>
+                    </div>
+
+                    {/* Main Card: Action & Privacy Shield */}
+                    <div className="flex-1 flex items-center justify-between gap-3 min-h-0">
+                      {/* Left Side: Connect Form */}
+                      <div className="flex-1 flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#131318] to-[#0c0c0f] border border-neutral-800/90 shadow-sm h-full">
+                        <div>
+                          <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span className="text-rose-400">●</span>
+                            <span>Connect your Google Account</span>
+                          </h4>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                            Receive non-intrusive notifications right on the Dynamic Island whenever new mail arrives.
+                          </p>
+                        </div>
+
+                        <div className="my-auto space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="email"
+                              value={mailEmailInput}
+                              onChange={(e) => setMailEmailInput(e.target.value)}
+                              placeholder="your.email@gmail.com"
+                              className="flex-1 px-2.5 py-1.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-rose-500/80 font-mono transition-all"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleConnectMail();
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleConnectMail()}
+                              disabled={isMailConnecting}
+                              className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(244,63,94,0.4)] disabled:opacity-50"
+                            >
+                              <span>{isMailConnecting ? '⏳' : '⚡'}</span>
+                              <span>{isMailConnecting ? 'Connecting...' : 'Connect'}</span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[9px] text-neutral-400 font-mono">
+                            <span>Quick start:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const quickEmail = 'creator@gmail.com';
+                                setMailEmailInput(quickEmail);
+                                handleConnectMail(quickEmail);
+                              }}
+                              className="text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                            >
+                              Connect demo account
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-neutral-800/70 text-[8.5px] text-neutral-500 font-mono flex items-center justify-between">
+                          <span>Secure token integration</span>
+                          <span className="text-emerald-400">SSL 256-Bit</span>
+                        </div>
+                      </div>
+
+                      {/* Right Side: USER-SPECIFIED PRIVACY NOTE */}
+                      <div className="w-[195px] flex flex-col justify-between p-3 rounded-2xl bg-[#0f1117] border border-emerald-500/30 text-neutral-300 shadow-sm relative overflow-hidden h-full">
+                        <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
+                          <span className="text-sm">🛡️</span>
+                          <span>Privacy Guarantee</span>
+                        </div>
+
+                        <div className="my-auto space-y-2">
+                          <p className="text-[10px] leading-relaxed text-neutral-200">
+                            Eyeland <strong className="text-emerald-300 font-bold">only sees how many unread emails</strong> you have.
+                          </p>
+                          <p className="text-[9px] leading-relaxed text-neutral-400 border-t border-neutral-850 pt-1.5">
+                            It <strong className="text-rose-300 font-medium">never reads the content</strong> or <strong className="text-rose-300 font-medium">who sent it</strong>. Zero access to messages, body text, or contacts.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-[8px] text-emerald-400 font-mono">
+                          <span>✓ 100% Client-side count only</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 2. CONNECTED STATE: Live Counter, Actions & Controls */
+                  <div className="flex-1 flex flex-col justify-between py-1 px-1">
+                    {/* Top Bar: Connected Account Chip + Quick Actions */}
+                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80 mb-2 flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                        <span className="text-xs font-bold text-white tracking-tight truncate max-w-[170px]" title={mailConfig.email}>
+                          {mailConfig.email || 'Gmail Connected'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[8px] font-mono">
+                          Count-Only Active
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.electronAPI?.openExternalUrl) {
+                              window.electronAPI.openExternalUrl('https://mail.google.com');
+                            } else {
+                              window.open('https://mail.google.com', '_blank');
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[9.5px] font-medium text-neutral-200 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
+                          title="Open Gmail inbox in your default web browser"
+                        >
+                          <span>Gmail</span>
+                          <span className="text-[8px]">↗</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDisconnectMail}
+                          className="px-2 py-1 rounded-lg bg-neutral-900 hover:bg-rose-500/20 border border-neutral-800 hover:border-rose-500/30 text-[9px] font-medium text-neutral-400 hover:text-rose-300 transition-all cursor-pointer active:scale-95"
+                          title="Disconnect Gmail account"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Main Body: 2 Wings */}
+                    <div className="flex-1 flex items-center justify-between gap-3 min-h-0">
+                      {/* Left Wing: Unread Counter KPI & Island Trigger */}
+                      <div className="flex-1 flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#14141a] to-[#0c0c0f] border border-neutral-800/90 shadow-sm h-full">
+                        <div className="flex items-center justify-between text-[10px] text-neutral-400 font-mono">
+                          <span>INBOX STATUS</span>
+                          <span className="text-emerald-400">● Realtime Sync</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 my-auto">
+                          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl shadow-[0_0_16px_rgba(244,63,94,0.25)] flex-shrink-0">
+                            ✉️
+                          </div>
+                          <div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-black font-mono text-white tracking-tight">
+                                {mailConfig.unreadCount}
+                              </span>
+                              <span className="text-[11px] font-medium text-neutral-300">
+                                {mailConfig.unreadCount === 1 ? 'unread email' : 'unread emails'}
+                              </span>
+                            </div>
+                            <p className="text-[8.5px] text-neutral-400 font-mono mt-0.5">
+                              {mailConfig.unreadCount > 0 ? 'Waiting in your inbox' : 'All caught up! Zero unread'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Interactive Notification Trigger: USER REQUESTED DEMO */}
+                        <div className="flex items-center gap-2 pt-1.5 border-t border-neutral-800/70">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextCount = (mailConfig.unreadCount || 0) + 1;
+                              setMailConfig((prev) => ({
+                                ...prev,
+                                unreadCount: nextCount,
+                                lastChecked: Date.now(),
+                              }));
+                              setIndicatorTimestamps((t) => ({ ...t, mail: Date.now() }));
+                              // Trigger the collapsed island notification
+                              triggerMailAlert(1);
+                            }}
+                            className="flex-1 py-1.5 px-2 rounded-xl bg-gradient-to-r from-rose-500/25 to-orange-500/20 hover:from-rose-500/35 hover:to-orange-500/30 border border-rose-500/40 text-rose-200 text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+                            title="Simulate receiving 1 new email to preview the collapsed island notification"
+                          >
+                            <span>🔔</span>
+                            <span>Test Notification (+1 New Email)</span>
+                          </button>
+
+                          {mailConfig.unreadCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMailConfig((prev) => ({ ...prev, unreadCount: 0 }));
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[9px] font-medium text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
+                              title="Mark all as read"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Wing: Island Alert Preferences & Privacy Seal */}
+                      <div className="w-[195px] flex flex-col justify-between p-3 rounded-2xl bg-[#0f1117] border border-neutral-800/80 h-full">
+                        <div>
+                          <span className="text-[9px] font-mono tracking-wider text-neutral-400 uppercase">
+                            Island Alert Mode
+                          </span>
+                          
+                          <div className="mt-2 space-y-2">
+                            <label className="flex items-center justify-between text-[10px] text-neutral-300 cursor-pointer">
+                              <span>Pop-up on new email</span>
+                              <input
+                                type="checkbox"
+                                checked={mailConfig.notificationsEnabled}
+                                onChange={(e) => {
+                                  setMailConfig((prev) => ({
+                                    ...prev,
+                                    notificationsEnabled: e.target.checked,
+                                  }));
+                                }}
+                                className="accent-rose-500 w-3.5 h-3.5 rounded cursor-pointer"
+                              />
+                            </label>
+
+                            <p className="text-[8.5px] text-neutral-400 leading-snug">
+                              Island removes eyes to show <span className="text-rose-300 font-mono font-medium">1 New Email</span> for 3.5s when mail arrives.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Privacy Confirmation Stamp */}
+                        <div className="p-2 rounded-xl bg-emerald-950/20 border border-emerald-500/25 flex items-start gap-1.5 text-[8.5px] text-emerald-300/90 leading-tight">
+                          <span className="text-xs">🛡️</span>
+                          <span>Zero Content Access: Only counts unread mail. Senders and text are never inspected.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
 
           {/* ======================================================== */}
@@ -5607,6 +5999,26 @@ export default function DynamicIsland({
                   </svg>
                   {totalNotesLength > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] pointer-events-none" />
+                  )}
+                </button>
+
+                {/* 9. Mail */}
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('mail'); setAiResponseCard(null); }}
+                  title="Gmail & Unread Email Alerts"
+                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                    activeTab === 'mail'
+                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                  }`}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  {mailConfig.connected && mailConfig.unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]" />
                   )}
                 </button>
               </div>

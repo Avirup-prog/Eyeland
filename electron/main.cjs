@@ -515,6 +515,18 @@ function createWindow() {
     }
   });
 
+  ipcMain.handle('open-external-url', async (event, url) => {
+    try {
+      if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+        await shell.openExternal(url);
+        return { success: true };
+      }
+      return { success: false, error: 'Invalid URL' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('get-file-details', async (event, fullPath) => {
     try {
       if (!fullPath || !fs.existsSync(fullPath)) return null;
