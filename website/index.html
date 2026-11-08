@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eyeland — Living Desktop Dynamic Island for Windows & Mac</title>
+  <meta name="description" content="A fluid, dynamic OLED companion island for your desktop powered by Gemini 3.5 Flash. Interactive replica, staging shelf, system telemetry, and expressive companion eyes.">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#060709] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-x-hidden">
+
+  <!-- =======================================================================
+       1. SPLASH SCREEN: PURE BLACK, ROUND EYES ONLY (NO TEXT)
+       ======================================================================= -->
+  <div id="splash-backdrop"></div>
+
+  <!-- Flying Round Eyes Layer (Pinpoint Landing at Top Edge Island) -->
+  <div id="splash-eyes-layer" role="dialog" aria-modal="true" aria-label="Eyeland Awakening">
+    <div id="splash-eyes-wrap" class="splash-eyes-wrap">
+      <!-- Ambient Glow Behind Eyes -->
+      <div class="absolute w-80 h-36 bg-emerald-400/20 rounded-full blur-[65px] pointer-events-none -z-10"></div>
+
+      <!-- Left Round Eye -->
+      <div id="splash-eye-left" class="round-eye blink-natural"></div>
+
+      <!-- Right Round Eye (Signature Wink) -->
+      <div id="splash-eye-right" class="round-eye blink-natural relative">
+        <svg id="splash-sparkle" class="sparkle-star w-8 h-8 text-emerald-300" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background Decorative Grid & Glow -->
+  <div class="fixed inset-0 bg-grid-pattern opacity-60 pointer-events-none z-0"></div>
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-emerald-500/[0.06] rounded-full blur-[90px] pointer-events-none z-0"></div>
+
+  <!-- =======================================================================
+       2. Sticky Navigation Header
+       ======================================================================= -->
+  <header id="main-header" class="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-[#060709]/80 backdrop-blur-xl relative overflow-hidden">
+    <div id="nav-border-scan" class="nav-border-scan"></div>
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <!-- Logo with Round Mini-Eyes -->
+      <a href="#" id="nav-logo" class="nav-reveal-item flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-lg bg-neutral-900 border border-white/15 flex items-center justify-center gap-1.5 group-hover:border-emerald-400/50 transition-colors shadow-inner">
+          <div class="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_6px_#c5f8d6]"></div>
+          <div class="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_6px_#c5f8d6]"></div>
+        </div>
+        <span class="font-bold text-base tracking-tight text-white group-hover:text-emerald-300 transition-colors">
+          Eyeland<span class="text-emerald-400 font-mono text-xs ml-1">AI</span>
+        </span>
+      </a>
+
+      <!-- Navigation Links (Animated Left to Right) -->
+      <nav id="nav-links" class="hidden md:flex items-center gap-8 text-xs font-medium text-neutral-400">
+        <a href="#interactive-hero" class="nav-reveal-item hover:text-emerald-300 transition-colors">Interactive Demo</a>
+        <a href="#features" class="nav-reveal-item hover:text-emerald-300 transition-colors">Features</a>
+        <a href="#specs" class="nav-reveal-item hover:text-emerald-300 transition-colors">System Specs</a>
+        <a href="#download" class="nav-reveal-item hover:text-emerald-300 transition-colors">Download</a>
+      </nav>
+
+      <!-- Right CTAs -->
+      <div class="flex items-center gap-3">
+        <a id="nav-cta" href="#download" class="nav-reveal-item flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/30 text-xs font-semibold hover:bg-emerald-400/20 hover:border-emerald-400/60 transition-all shadow-[0_0_15px_rgba(197,248,214,0.15)]">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>Download .exe</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =======================================================================
+       3. Hero Section: Computer Model & Interactive Island Replica
+       ======================================================================= -->
+  <main class="relative z-10 pt-10 pb-24">
+    
+    <div id="hero-main-content" class="max-w-5xl mx-auto px-6 text-center mb-8">
+      <div id="hero-badge" class="hero-reveal-item inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-emerald-400/20 text-xs font-mono text-emerald-300 mb-4 shadow-sm opacity-0 translate-y-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>Eyeland 1.0 • Windows 10/11 & macOS Companion</span>
+      </div>
+
+      <h1 id="hero-heading" class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-4 leading-[1.1] min-h-[92px] sm:min-h-[140px]">
+        <span id="typewriter-line1"></span><br class="hidden sm:inline" />
+        <span id="typewriter-line2" class="bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-400 bg-clip-text text-transparent"></span>
+        <span id="typewriter-cursor" class="typewriter-cursor">|</span>
+      </h1>
+
+      <p id="hero-subtitle" class="hero-reveal-item max-w-2xl mx-auto text-sm sm:text-base text-neutral-400 font-normal leading-relaxed mb-4 opacity-0 translate-y-2">
+        Hover over the island at the top edge of the laptop screen to expand it. Move your mouse away to collapse it back. Explore Home, AI Tools, Music, Eyeland AI, Focus, Shelf, Clipboard, and Scratchpad!
+      </p>
+    </div>
+
+    <!-- =======================================================================
+         4. THE REALISTIC COMPUTER SCREEN MODEL WITH EXACT ISLAND REPLICA
+         ======================================================================= -->
+    <section id="interactive-hero" class="max-w-5xl mx-auto px-4 mb-20">
+      <div class="computer-perspective-frame">
+        <div class="computer-chassis">
+          
+          <!-- Computer Display Area (Destination for smooth shrink) -->
+          <div id="computer-screen-area" class="computer-display-area">
+            
+            <!-- Realistic Windows Desktop Wallpaper Workspace -->
+            <div class="desktop-canvas">
+              
+              <!-- Left Desktop Shortcuts: Standard Windows style -->
+              <div class="desktop-shortcuts-area">
+                <div id="desktop-drop-zone" class="flex flex-col gap-3">
+                  <!-- Injected by island-replica.js (Draggable Q3_Financial.pdf, Concept_Art.png) -->
+                </div>
+                <div class="desktop-icon-item">
+                  <span class="text-2xl mb-1 text-amber-400">📁</span>
+                  <span class="text-[10px] font-medium text-neutral-300 block truncate w-full drop-shadow">Project Vault</span>
+                </div>
+              </div>
+
+              <!-- Realistic Windows 11 Taskbar Docked at Very Bottom of Screen -->
+              <div class="win11-taskbar">
+                <!-- Left Empty / Weather Area -->
+                <div class="flex items-center gap-2 text-neutral-400 text-xs">
+                  <span>⛅ 24°C Sunny</span>
+                </div>
+
+                <!-- Centered Windows 11 App Icons -->
+                <div class="win11-taskbar-icons">
+                  <div class="win11-app-icon" title="Start">
+                    <span class="text-sky-400 font-bold text-sm">⊞</span>
+                  </div>
+                  <div class="win11-app-icon" title="Search">
+                    <span class="text-neutral-400 text-xs">🔍</span>
+                  </div>
+                  <div class="win11-app-icon" title="File Explorer">
+                    <span class="text-amber-400 text-xs">📁</span>
+                  </div>
+                  <div class="win11-app-icon" title="Microsoft Edge">
+                    <span class="text-sky-400 text-xs">🌊</span>
+                  </div>
+                  <div class="win11-app-icon" title="Visual Studio Code">
+                    <span class="text-blue-400 text-xs">💻</span>
+                  </div>
+                  <div class="win11-app-icon" title="Terminal">
+                    <span class="text-neutral-300 text-xs">⬛</span>
+                  </div>
+                  <div class="win11-app-icon" title="Spotify">
+                    <span class="text-emerald-400 text-xs">🟢</span>
+                  </div>
+                </div>
+
+                <!-- Right System Tray -->
+                <div class="flex items-center gap-3 text-[10.5px] font-mono text-neutral-400">
+                  <span class="text-emerald-400 font-semibold">180 MB</span>
+                  <span>📶</span>
+                  <span>🔊</span>
+                  <span>100% 🔋</span>
+                  <span id="win11-taskbar-clock" class="text-neutral-200">20:17</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- =============================================================
+                 THE REPLICA DYNAMIC ISLAND (Sitting at the Exact Top Edge)
+                 ============================================================= -->
+            <div id="replica-island-wrap" class="replica-island-wrap">
+              
+              <!-- 1. Collapsed State Capsule (Exact Pixel-Perfect Match to Screenshot b5ca253b) -->
+              <div id="replica-collapsed-pill" class="collapsed-pill-container" style="opacity: 0;" title="Hover to expand Eyeland">
+                <!-- ZONE 1 (LEFT): 54px mirrored side zone keeps center eyes aligned -->
+                <div class="w-[54px] flex items-center justify-start pl-1 flex-shrink-0">
+                  <span id="collapsed-clock-time" class="text-[11px] font-mono font-medium text-neutral-400 tracking-tight">20:17</span>
+                </div>
+
+                <!-- ZONE 2 (CENTER): Living Glowing Eyes in exact mathematical center -->
+                <div class="flex-1 flex items-center justify-center relative overflow-visible">
+                  <!-- Ambient diffuse mint aura halo (exact from screenshot b5ca253b) -->
+                  <div class="absolute w-16 h-7 bg-emerald-400/20 blur-[8px] rounded-full pointer-events-none"></div>
+                  <!-- 10px round eyes with 10px gap and natural blink -->
+                  <div id="collapsed-eyes-target" class="flex items-center gap-[10px] relative z-10 blink-natural">
+                    <div id="replica-mini-eye-left" class="mini-round-eye"></div>
+                    <div id="replica-mini-eye-right" class="mini-round-eye"></div>
+                  </div>
+                </div>
+
+                <!-- ZONE 3 (RIGHT): 54px mirrored side zone with battery charging indicator -->
+                <div class="w-[54px] flex items-center justify-end pr-1 flex-shrink-0">
+                  <div class="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex-shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.7)]" title="Charging AC (100%)">
+                    <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.08-.14L13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.13-5.9 10.36z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Expanded Window Container (Exact Screenshots of All Tabs) -->
+              <div id="replica-expanded-window" class="expanded-window-container hidden">
+                <div id="replica-window-content" class="w-full h-full flex flex-col justify-between">
+                  <!-- Rendered dynamically by island-replica.js -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Screen Glare Lighting -->
+            <div class="screen-glare-sheen"></div>
+          </div>
+
+          <!-- Computer Base Stand -->
+          <div class="computer-base-deck">
+            <div class="computer-notch-lip"></div>
+          </div>
+
+          <!-- Chassis Floor Glow -->
+          <div class="chassis-ambient-glow"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         5. Core Architecture & Features Deep Dive
+         ======================================================================= -->
+    <section id="features" class="max-w-7xl mx-auto px-6 mb-24">
+      <div class="text-center max-w-3xl mx-auto mb-14">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">
+          Everything You Need in One Floating Capsule
+        </h2>
+        <p class="text-neutral-400 text-sm sm:text-base">
+          Engineered as a high-performance native desktop companion. No web views, no background battery drain.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-emerald-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center text-emerald-300 mb-4">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Gemini 3.5 Flash Pre-Bundled</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Zero configuration required for end users. Bundled developer key provides immediate access to multimodal vision, code debugging, and rapid streaming.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-sky-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-300 mb-4">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Drop Zone Staging Shelf</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Fling files directly into the top notch. Eyeland holds them in a staging buffer, allowing instant dragging onto secondary displays or other applications.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-amber-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-300 mb-4">
+            <i data-lucide="gauge" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Telemetry & Pulse Bar</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Real-time live monitoring for CPU core loads, available RAM, network I/O speeds, and battery percentage with charging indicators.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-purple-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-purple-400/10 border border-purple-400/20 flex items-center justify-center text-purple-300 mb-4">
+            <i data-lucide="music" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Smart Media & Soundboard</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Universal player controller for Spotify, YouTube, and Apple Music. Built-in soundboard effects and automatic Hindi Romanizer.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-pink-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-pink-400/10 border border-pink-400/20 flex items-center justify-center text-pink-300 mb-4">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Gaze Tracking Physics</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Circular round glowing eyes calculate angle and distance to your cursor. Features gentle blinks, winks, and idle sleep animations.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 hover:border-emerald-500/30 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center text-emerald-300 mb-4">
+            <i data-lucide="timer" class="w-5 h-5"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white mb-2">Pomodoro Deep Focus Mode</h4>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Built-in 25-minute deep focus intervals and 5-minute zen breaks with subtle pulse indicators right on the island bezel.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         6. Technical Specs
+         ======================================================================= -->
+    <section id="specs" class="max-w-5xl mx-auto px-6 mb-24">
+      <div class="rounded-3xl p-8 sm:p-12 bg-neutral-900/40 border border-white/10">
+        <div class="text-center mb-10">
+          <span class="text-xs font-mono text-emerald-400 uppercase tracking-widest">System Specifications</span>
+          <h3 class="text-2xl sm:text-3xl font-bold text-white mt-1">Lightweight Desktop Footprint</h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            <p class="text-xs text-neutral-400 mb-1">Target Operating System</p>
+            <p class="text-base font-bold text-white">Windows 10 / 11</p>
+            <p class="text-[10px] text-neutral-500 mt-1">64-bit Architecture</p>
+          </div>
+          <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            <p class="text-xs text-neutral-400 mb-1">RAM Consumption</p>
+            <p class="text-base font-bold text-emerald-400">~180 MB Baseline</p>
+            <p class="text-[10px] text-neutral-500 mt-1">Scales to 220MB during AI chat</p>
+          </div>
+          <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            <p class="text-xs text-neutral-400 mb-1">CPU Overhead</p>
+            <p class="text-base font-bold text-sky-400">0.2% - 0.5% Idle</p>
+            <p class="text-[10px] text-neutral-500 mt-1">Background sleep throttling</p>
+          </div>
+          <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            <p class="text-xs text-neutral-400 mb-1">Installer Size</p>
+            <p class="text-base font-bold text-amber-400">~75 - 85 MB</p>
+            <p class="text-[10px] text-neutral-500 mt-1">Standalone .exe installer</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         7. Download CTA
+         ======================================================================= -->
+    <section id="download" class="max-w-4xl mx-auto px-6 text-center">
+      <div class="p-10 rounded-3xl bg-gradient-to-b from-neutral-900 to-[#0e0f14] border border-emerald-400/30 shadow-[0_0_50px_rgba(197,248,214,0.1)]">
+        <h3 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
+          Experience Eyeland Today.
+        </h3>
+        <p class="text-neutral-400 text-sm sm:text-base max-w-xl mx-auto mb-8">
+          Download the standalone Windows application. Bundled with Gemini 3.5 Flash out of the box with zero configuration required.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          <a href="#" class="px-8 py-4 rounded-xl bg-emerald-400 text-neutral-950 font-bold text-sm hover:bg-emerald-300 transition-all shadow-[0_0_25px_rgba(197,248,214,0.4)] flex items-center gap-3">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download Installer (.exe)</span>
+          </a>
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="px-6 py-4 rounded-xl bg-neutral-900 border border-white/10 text-neutral-300 font-semibold text-sm hover:bg-neutral-800 hover:text-white transition-all flex items-center gap-2">
+            <i data-lucide="github" class="w-4 h-4"></i>
+            <span>GitHub Repository</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =======================================================================
+       8. Footer
+       ======================================================================= -->
+  <footer class="border-t border-white/[0.06] py-12 relative z-10 text-xs text-neutral-500">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+        <span class="text-neutral-400 font-medium">Eyeland Desktop Companion</span>
+        <span>&bull; Built with Electron, Vite & React</span>
+      </div>
+      <div>
+        <span>MIT Open Source &bull; Google Gemini 3.5 Powered</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    lucide.createIcons();
+  </script>
+  <script src="island-replica.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

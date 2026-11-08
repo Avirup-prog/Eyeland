@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Eyeland Precision Snip</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+      cursor: crosshair;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    #bg-canvas, #overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #hud-hint {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 15, 20, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #e2e8f0;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+      display: flex;
+      items-center: center;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.2);
+      pointer-events: none;
+      z-index: 100;
+      animation: fadeInDown 0.2s ease-out;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translate(-50%, -10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+
+    <div id="hud-hint">
+      <span style="color: #38bdf8; font-weight: bold;">✂️ PRECISION SNIP</span>
+      <span style="color: #94a3b8;">|</span>
+      <span id="tool-label" style="color: #f8fafc; font-weight: 600;">EXPLAIN</span>
+      <span style="color: #94a3b8;">|</span>
+      <span style="color: #a7f3d0;">Drag a box around text or paragraph • [Esc] Cancel</span>
+    </div>
+  </div>
+
+  <script>
+    const bgCanvas = document.getElementById('bg-canvas');
+    const overlayCanvas = document.getElementById('overlay-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const toolLabel = document.getElementById('tool-label');
+
+    let bgImage = new Image();
+    let isImageLoaded = false;
+    let isMouseDown = false;
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let activeTool = 'explain';
+    let dpr = window.devicePixelRatio || 1;
+
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      bgCanvas.width = w * dpr;
+      bgCanvas.height = h * dpr;
+      bgCanvas.style.width = w + 'px';
+      bgCanvas.style.height = h + 'px';
+
+      overlayCanvas.width = w * dpr;
+      overlayCanvas.height = h * dpr;
+      overlayCanvas.style.width = w + 'px';
+      overlayCanvas.style.height = h + 'px';
+
+      if (isImageLoaded) {
+        bgCtx.drawImage(bgImage, 0, 0, bgCanvas.width, bgCanvas.height);
+      }
+      drawOverlay();
+    }
+
+    window.addEventListener('resize', resize);
+
+    if (window.snipperAPI?.onInit) {
+      window.snipperAPI.onInit((data) => {
+        if (data.toolName) {
+          activeTool = data.toolName;
+          toolLabel.textContent = data.toolName.toUpperCase();
+        }
+        if (data.screenDataUrl) {
+          bgImage.onload = () => {
+            isImageLoaded = true;
+            resize();
+          };
+          bgImage.src = data.screenDataUrl;
+        }
+      });
+    }
+
+    function drawOverlay() {
+      const w = overlayCanvas.width;
+      const h = overlayCanvas.height;
+      overlayCtx.clearRect(0, 0, w, h);
+
+      if (!isMouseDown) {
+        // Subtle global screen dimming
+        overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        overlayCtx.fillRect(0, 0, w, h);
+
+        // Draw precision crosshair reticle following cursor
+        if (currentX > 0 && currentY > 0) {
+          const cx = currentX * dpr;
+          const cy = currentY * dpr;
+
+          overlayCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          overlayCtx.lineWidth = 1;
+          overlayCtx.setLineDash([4, 4]);
+
+          // Horizontal guide
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(0, cy);
+          overlayCtx.lineTo(w, cy);
+          overlayCtx.stroke();
+
+          // Vertical guide
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(cx, 0);
+          overlayCtx.lineTo(cx, h);
+          overlayCtx.stroke();
+          overlayCtx.setLineDash([]);
+
+          // Center reticle
+          overlayCtx.strokeStyle = '#38bdf8';
+          overlayCtx.lineWidth = 1.5;
+          overlayCtx.beginPath();
+          overlayCtx.arc(cx, cy, 8, 0, Math.PI * 2);
+          overlayCtx.stroke();
+
+          // Reticle + lines
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(cx - 14, cy);
+          overlayCtx.lineTo(cx + 14, cy);
+          overlayCtx.moveTo(cx, cy - 14);
+          overlayCtx.lineTo(cx, cy + 14);
+          overlayCtx.stroke();
+        }
+        return;
+      }
+
+      // We are dragging a selection box
+      const selX = Math.min(startX, currentX) * dpr;
+      const selY = Math.min(startY, currentY) * dpr;
+      const selW = Math.abs(currentX - startX) * dpr;
+      const selH = Math.abs(currentY - startY) * dpr;
+
+      // 1. Dim outside the selection box
+      overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      overlayCtx.fillRect(0, 0, w, selY); // Top
+      overlayCtx.fillRect(0, selY + selH, w, h - (selY + selH)); // Bottom
+      overlayCtx.fillRect(0, selY, selX, selH); // Left
+      overlayCtx.fillRect(selX + selW, selY, w - (selX + selW), selH); // Right
+
+      // 2. Selection glowing border
+      overlayCtx.strokeStyle = '#38bdf8';
+      overlayCtx.lineWidth = 2 * dpr;
+      overlayCtx.shadowColor = 'rgba(56, 189, 248, 0.8)';
+      overlayCtx.shadowBlur = 10 * dpr;
+      overlayCtx.strokeRect(selX, selY, selW, selH);
+      overlayCtx.shadowBlur = 0;
+
+      // 3. Sci-fi Corner brackets
+      const cornerLen = Math.min(18 * dpr, selW / 3, selH / 3);
+      overlayCtx.strokeStyle = '#34d399';
+      overlayCtx.lineWidth = 3 * dpr;
+
+      // Top-Left
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(selX, selY + cornerLen);
+      overlayCtx.lineTo(selX, selY);
+      overlayCtx.lineTo(selX + cornerLen, selY);
+      overlayCtx.stroke();
+
+      // Top-Right
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(selX + selW - cornerLen, selY);
+      overlayCtx.lineTo(selX + selW, selY);
+      overlayCtx.lineTo(selX + selW, selY + cornerLen);
+      overlayCtx.stroke();
+
+      // Bottom-Left
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(selX, selY + selH - cornerLen);
+      overlayCtx.lineTo(selX, selY + selH);
+      overlayCtx.lineTo(selX + cornerLen, selY + selH);
+      overlayCtx.stroke();
+
+      // Bottom-Right
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(selX + selW - cornerLen, selY + selH);
+      overlayCtx.lineTo(selX + selW, selY + selH);
+      overlayCtx.lineTo(selX + selW, selY + selH - cornerLen);
+      overlayCtx.stroke();
+
+      // 4. Dimension Badge below or above selection
+      const badgeW = Math.round(selW / dpr);
+      const badgeH = Math.round(selH / dpr);
+      const badgeText = `${badgeW} × ${badgeH} px`;
+
+      overlayCtx.font = `bold ${10 * dpr}px monospace`;
+      const textWidth = overlayCtx.measureText(badgeText).width;
+      const padX = 8 * dpr;
+      const padY = 4 * dpr;
+      const bHeight = 18 * dpr;
+      const bWidth = textWidth + padX * 2;
+
+      let badgeX = selX + (selW - bWidth) / 2;
+      let badgeY = selY + selH + 10 * dpr;
+      if (badgeY + bHeight > h - 10) {
+        badgeY = selY - bHeight - 10 * dpr;
+      }
+
+      overlayCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      overlayCtx.strokeStyle = '#38bdf8';
+      overlayCtx.lineWidth = 1 * dpr;
+      roundRect(overlayCtx, badgeX, badgeY, bWidth, bHeight, 4 * dpr, true, true);
+
+      overlayCtx.fillStyle = '#f8fafc';
+      overlayCtx.fillText(badgeText, badgeX + padX, badgeY + bHeight - 5 * dpr);
+    }
+
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    window.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // Only primary mouse button
+      isMouseDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      currentX = e.clientX;
+      currentY = e.clientY;
+      drawOverlay();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      currentX = e.clientX;
+      currentY = e.clientY;
+      drawOverlay();
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+
+      const selW = Math.abs(currentX - startX);
+      const selH = Math.abs(currentY - startY);
+
+      // Require minimal snip size (e.g. 15px)
+      if (selW < 15 || selH < 15) {
+        drawOverlay();
+        return;
+      }
+
+      const cropX = Math.round(Math.min(startX, currentX) * dpr);
+      const cropY = Math.round(Math.min(startY, currentY) * dpr);
+      const cropW = Math.round(selW * dpr);
+      const cropH = Math.round(selH * dpr);
+
+      try {
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropW;
+        cropCanvas.height = cropH;
+        const cropCtx = cropCanvas.getContext('2d');
+
+        // Draw cropped portion from original background image
+        cropCtx.drawImage(bgCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+        const dataUrl = cropCanvas.toDataURL('image/png');
+        if (window.snipperAPI?.finishSnipping) {
+          window.snipperAPI.finishSnipping({
+            dataUrl,
+            bounds: {
+              x: Math.min(startX, currentX),
+              y: Math.min(startY, currentY),
+              width: selW,
+              height: selH,
+            },
+            toolName: activeTool,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to crop canvas:', err);
+        if (window.snipperAPI?.cancelSnipping) {
+          window.snipperAPI.cancelSnipping();
+        }
+      }
+    });
+
+    // Escape or Right Click to cancel
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (window.snipperAPI?.cancelSnipping) {
+          window.snipperAPI.cancelSnipping();
+        }
+      }
+    });
+
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (window.snipperAPI?.cancelSnipping) {
+        window.snipperAPI.cancelSnipping();
+      }
+    });
+  </script>
+</body>
+</html>
