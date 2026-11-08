@@ -2589,6 +2589,18 @@ export default function DynamicIsland({
                 •••
               </button>
 
+              {/* Eyeland Hub / Dashboard Button (⚙️) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.electronAPI?.openDashboard?.();
+                }}
+                title="Open Eyeland Hub"
+                className="p-1 px-1.5 rounded-md text-neutral-400 hover:text-emerald-400 hover:bg-neutral-800 transition-colors text-xs cursor-pointer"
+              >
+                ⚙️
+              </button>
+
               {/* CONNECTIVITY & SENSOR DROPDOWN POPOVER (Compact, opaque, contained) */}
               {isDropdownOpen && (
                 <div

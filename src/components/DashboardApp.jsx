@@ -2,11 +2,21 @@ import React, { useState, useEffect } from 'react';
 import MinimalEyes from './MinimalEyes.jsx';
 
 export default function DashboardApp() {
-  const [activeNav, setActiveNav] = useState('overview');
+  const [activeNav, setActiveNav] = useState('home');
   const [isMaximized, setIsMaximized] = useState(false);
+  const [userName, setUserName] = useState('Creator');
+  const [currentTime, setCurrentTime] = useState({
+    timeStr: '4:41 PM',
+    dateStr: 'SUN 08 NOV',
+    greeting: 'Good afternoon'
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTheme, setActiveTheme] = useState('mint');
+
+  // System & AI status
   const [systemInfo, setSystemInfo] = useState({
-    cpu: { loadPercent: 8, model: 'Multi-Core CPU' },
-    memory: { usedGb: '8.2', totalGb: '16.0', percent: 51 },
+    cpu: { loadPercent: 12, model: 'Multi-Core CPU' },
+    memory: { usedGb: '8.4', totalGb: '16.0', percent: 52 },
     battery: { percent: 100, isCharging: true },
   });
   const [aiStatus, setAiStatus] = useState({
@@ -15,8 +25,41 @@ export default function DashboardApp() {
     hasKey: true,
   });
 
+  // Live Clock & User Info
   useEffect(() => {
-    // Check initial maximize state
+    const updateTime = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+
+      const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const dayName = days[now.getDay()];
+      const dayNum = String(now.getDate()).padStart(2, '0');
+      const monthName = months[now.getMonth()];
+
+      let greet = 'Good morning';
+      if (hours >= 12 && hours < 17) greet = 'Good afternoon';
+      else if (hours >= 17) greet = 'Good evening';
+
+      setCurrentTime({
+        timeStr: `${displayHours}:${minutes} ${ampm}`,
+        dateStr: `${dayName} ${dayNum} ${monthName}`,
+        greeting: greet
+      });
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    // Fetch user info & telemetry
+    if (window.electronAPI?.getUserInfo) {
+      window.electronAPI.getUserInfo().then((info) => {
+        if (info?.username) setUserName(info.username);
+      }).catch(() => {});
+    }
     if (window.electronAPI?.isDashboardMaximized) {
       window.electronAPI.isDashboardMaximized().then(setIsMaximized).catch(() => {});
     }
@@ -30,64 +73,92 @@ export default function DashboardApp() {
         if (s) setAiStatus(s);
       }).catch(() => {});
     }
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleMinimize = () => {
-    if (window.electronAPI?.minimizeDashboard) {
-      window.electronAPI.minimizeDashboard();
-    }
+    window.electronAPI?.minimizeDashboard?.();
   };
 
   const handleMaximize = () => {
-    if (window.electronAPI?.maximizeDashboard) {
-      window.electronAPI.maximizeDashboard();
-      setIsMaximized(!isMaximized);
-    }
+    window.electronAPI?.maximizeDashboard?.();
+    setIsMaximized(!isMaximized);
   };
 
   const handleClose = () => {
-    if (window.electronAPI?.closeDashboard) {
-      window.electronAPI.closeDashboard();
-    }
+    window.electronAPI?.closeDashboard?.();
   };
 
-  const navItems = [
-    { id: 'overview', label: 'Overview', icon: '📊', desc: 'System telemetry & status' },
-    { id: 'ai', label: 'AI & Models', icon: '🤖', desc: 'Gemini LLM & Vision setup' },
-    { id: 'appearance', label: 'Appearance', icon: '🎨', desc: 'Themes, eyes & glow' },
-    { id: 'behaviors', label: 'Behaviors', icon: '⚡', desc: 'Autostart & triggers' },
-    { id: 'shelf', label: 'Storage & Shelf', icon: '📁', desc: 'Clipboard & staged files' },
-    { id: 'about', label: 'About', icon: 'ℹ️', desc: 'App info & updates' },
+  // Categorized Navigation Items (Exactly structured like the Hub screenshot)
+  const navGroups = [
+    {
+      group: 'EYELAND',
+      items: [
+        { id: 'home', label: 'Home', icon: '🏠', badge: null },
+        { id: 'connections', label: 'Connections', icon: '🔌', badge: 'dot' },
+        { id: 'ai_chat', label: 'AI & Chat', icon: '💬', badge: 'dot' },
+        { id: 'apps', label: 'Apps & Tools', icon: '🎛️', badge: null },
+      ]
+    },
+    {
+      group: 'COMPANION',
+      items: [
+        { id: 'companion', label: 'Eyeland Buddy', icon: '🤖', badge: null },
+        { id: 'wardrobe', label: 'Wardrobe', icon: '👕', badge: null },
+      ]
+    },
+    {
+      group: 'SETTINGS',
+      items: [
+        { id: 'account', label: 'Account', icon: '👤', badge: null },
+        { id: 'general', label: 'General', icon: '⚙️', badge: null },
+        { id: 'notifications', label: 'Notifications', icon: '🔔', badge: null },
+        { id: 'island', label: 'Island Display', icon: '🏝️', badge: null },
+        { id: 'focus_guard', label: 'Focus Guard', icon: '🛡️', badge: null },
+        { id: 'news', label: 'News & Updates', icon: '📰', badge: null },
+        { id: 'support', label: 'Support Eyeland', icon: '🤍', badge: null },
+      ]
+    }
   ];
 
   return (
-    <div className="w-screen h-screen bg-[#09090d] text-neutral-100 flex flex-col font-sans select-none overflow-hidden border border-neutral-800/80 rounded-2xl shadow-2xl">
-      {/* WINDOW TITLEBAR (DRAGGABLE REGION) */}
+    <div className="w-screen h-screen bg-[#07070a] text-neutral-100 flex flex-col font-sans select-none overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_25px_70px_rgba(0,0,0,0.85)]">
+      
+      {/* =====================================================================
+          1. WINDOW TITLEBAR (DRAGGABLE REGION)
+          ===================================================================== */}
       <div 
-        className="h-10 bg-[#0e0e13]/90 backdrop-blur-xl border-b border-neutral-800/80 flex items-center justify-between px-3 shrink-0"
+        className="h-11 bg-[#0b0c10]/95 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-3.5 shrink-0"
         style={{ WebkitAppRegion: 'drag' }}
       >
-        {/* App Title & Identity */}
-        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' }}>
-          <div className="w-5 h-5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs shadow-sm">
-            👁️
+        {/* Left Identity: Mini-eyes icon + Eyeland Hub + BETA */}
+        <div className="flex items-center gap-2.5" style={{ WebkitAppRegion: 'no-drag' }}>
+          <div className="w-6 h-6 rounded-lg bg-neutral-900 border border-white/15 flex items-center justify-center gap-1 shadow-inner">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></div>
           </div>
           <span className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
-            <span>Eyeland</span>
-            <span className="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 font-normal">
-              Dashboard
+            <span>Eyeland Hub</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-800/80 text-neutral-400 border border-white/10 uppercase font-semibold">
+              BETA
             </span>
           </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" title="Service Active" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" title="Eyeland Bezel Connected" />
         </div>
 
-        {/* Windows Standard Window Action Buttons */}
+        {/* Center Subtitle */}
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-neutral-500">
+          <span>Companion Overlay • Bezel Docked</span>
+        </div>
+
+        {/* Right Window Controls (Standard Windows Actions) */}
         <div className="flex items-center gap-1" style={{ WebkitAppRegion: 'no-drag' }}>
           {/* Minimize */}
           <button
             type="button"
             onClick={handleMinimize}
-            className="w-7 h-7 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Minimize"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -99,7 +170,7 @@ export default function DashboardApp() {
           <button
             type="button"
             onClick={handleMaximize}
-            className="w-7 h-7 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title={isMaximized ? 'Restore' : 'Maximize'}
           >
             {isMaximized ? (
@@ -119,7 +190,7 @@ export default function DashboardApp() {
             type="button"
             onClick={handleClose}
             className="w-7 h-7 rounded-lg hover:bg-rose-600 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            title="Close Dashboard"
+            title="Close Hub"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -129,368 +200,345 @@ export default function DashboardApp() {
         </div>
       </div>
 
-      {/* DASHBOARD BODY (SIDEBAR + MAIN CONTENT AREA) */}
+      {/* =====================================================================
+          2. HUB BODY (SIDEBAR + DYNAMIC CONTENT)
+          ===================================================================== */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         
         {/* LEFT NAVIGATION SIDEBAR */}
-        <aside className="w-56 bg-[#0b0b0f]/95 border-r border-neutral-800/80 p-3 flex flex-col justify-between shrink-0 select-none">
-          <div className="space-y-1">
-            <div className="px-2 py-1 mb-2">
-              <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider font-semibold">
-                Control Center
-              </span>
-            </div>
+        <aside className="w-56 bg-[#090a0f]/95 border-r border-white/[0.06] p-3 flex flex-col justify-between shrink-0 select-none overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.group} className="space-y-0.5">
+                <div className="px-2.5 py-1">
+                  <span className="text-[9.5px] font-mono text-neutral-500 uppercase tracking-wider font-bold">
+                    {group.group}
+                  </span>
+                </div>
 
-            {navItems.map((item) => {
-              const isActive = activeNav === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveNav(item.id)}
-                  className={`w-full px-3 py-2 rounded-xl text-left flex items-center gap-2.5 transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 border border-transparent'
-                  }`}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <div className="flex flex-col min-w-0">
-                    <span className={`text-xs font-semibold ${isActive ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                      {item.label}
-                    </span>
-                    <span className="text-[9px] text-neutral-500 truncate">
-                      {item.desc}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                {group.items.map((item) => {
+                  const isActive = activeNav === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setActiveNav(item.id)}
+                      className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-neutral-800/80 border border-white/10 text-white shadow-sm font-semibold'
+                          : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.04] border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-sm shrink-0">{item.icon}</span>
+                        <span className="text-xs truncate">{item.label}</span>
+                      </div>
+                      {item.badge === 'dot' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
-          {/* Bottom Island Status Badge */}
-          <div className="p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-800/90 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xs shrink-0">
-              ⚡
+          {/* Bottom Companion Status Capsule */}
+          <div className="mt-3 p-2 rounded-xl bg-neutral-900/80 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <span className="text-xs">🤖</span>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-white truncate">Eyeland Buddy</div>
+                <div className="text-[8.5px] font-mono text-emerald-400 truncate">Companion Active</div>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10.5px] font-semibold text-white truncate">Bezel Island Docked</div>
-              <div className="text-[8.5px] font-mono text-emerald-400 truncate">Flush Top Screen Bezel</div>
-            </div>
+            <button 
+              onClick={() => setActiveTheme(activeTheme === 'mint' ? 'amber' : 'mint')}
+              className="w-6 h-6 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white flex items-center justify-center text-xs transition-colors"
+              title="Theme Toggle"
+            >
+              🔆
+            </button>
           </div>
         </aside>
 
         {/* MAIN DYNAMIC CONTENT CONTAINER */}
-        <main className="flex-1 min-h-0 bg-[#09090d] p-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+        <main className="flex-1 min-h-0 bg-[#060709] p-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           
-          {/* TAB 1: OVERVIEW */}
-          {activeNav === 'overview' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              {/* Header */}
+          {/* =================================================================
+              TAB: HOME (Matching screenshot layout)
+              ================================================================= */}
+          {activeNav === 'home' && (
+            <div className="space-y-6 max-w-4xl animate-fadeIn">
+              
+              {/* TOP VIBRANT GRADIENT HERO BANNER WITH MINI ISLAND NOTCH */}
+              <div className="relative rounded-2xl overflow-hidden border border-white/10 p-6 pt-4 bg-gradient-to-r from-amber-600/30 via-rose-600/25 to-purple-800/30 shadow-xl">
+                
+                {/* Ambient dynamic lighting */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-32 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                {/* Floating Top-Center Dynamic Island Notch Preview */}
+                <div className="mx-auto w-64 h-11 bg-black/95 border border-neutral-700/80 rounded-2xl flex items-center justify-between px-3.5 shadow-2xl relative z-10 backdrop-blur-md">
+                  <span className="text-[10px] font-mono text-neutral-400 font-semibold">{currentTime.dateStr}</span>
+                  
+                  {/* Glowing Animated Eyes */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_6px_#c5f8d6]"></div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_6px_#c5f8d6]"></div>
+                  </div>
+
+                  <span className="text-[10px] font-mono text-neutral-400">28° ☀️</span>
+                </div>
+
+                {/* Big Bold Clock */}
+                <div className="text-center mt-2 mb-4 relative z-10">
+                  <span className="text-4xl font-extrabold tracking-tight text-white drop-shadow-md font-mono">
+                    {currentTime.timeStr.replace(' AM', '').replace(' PM', '')}
+                  </span>
+                </div>
+
+                {/* Banner Bottom Label */}
+                <div className="relative z-10">
+                  <h1 className="text-2xl font-extrabold text-white tracking-tight">Home</h1>
+                </div>
+              </div>
+
+              {/* USER GREETING */}
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">System & Island Overview</h2>
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  {currentTime.greeting}, <span className="text-emerald-400">{userName}</span>
+                </h2>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  Live telemetry, ambient companion state, and active AI services running on your PC.
+                  Eyeland keeps an eye on your workflow, tasks, and system performance.
                 </p>
               </div>
 
-              {/* Hero Status Banner */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-teal-950/30 border border-emerald-500/30 flex items-center justify-between shadow-lg">
-                <div className="flex items-center gap-4">
-                  <div className="p-2 rounded-2xl bg-black/60 border border-emerald-500/30 shadow-inner">
-                    <MinimalEyes
-                      tiltDeg={0}
-                      offsetX={0}
-                      offsetY={0}
-                      expression="neutral"
-                      themeColor="#c5f8d6"
-                      themeShadow="0 0 14px rgba(197, 248, 214, 0.95)"
-                      size="sm"
+              {/* "CONNECT YOUR AI" FEATURED CARD */}
+              <div className="p-4 rounded-2xl bg-neutral-900/70 border border-white/10 flex items-center justify-between hover:border-emerald-500/30 transition-all shadow-md">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.08-.14L13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.13-5.9 10.36z"/>
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-white">Connect your AI</h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Turn on Gemini 3.5 Flash, Claude Code, or Codex. Eyeland tells you when your AI finishes a task, and answers your questions.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setActiveNav('connections')}
+                  className="px-4 py-2 rounded-xl bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-colors shrink-0 shadow-sm cursor-pointer ml-4"
+                >
+                  Connect
+                </button>
+              </div>
+
+              {/* 3 STATS / KPI CARDS ROW */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Tasks Done */}
+                <div className="p-4 rounded-2xl bg-neutral-900/60 border border-white/10 flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 text-sm shrink-0">
+                    ✓
+                  </div>
+                  <div>
+                    <div className="text-xl font-extrabold text-white">0</div>
+                    <div className="text-xs text-neutral-400">tasks done</div>
+                  </div>
+                </div>
+
+                {/* Today */}
+                <div className="p-4 rounded-2xl bg-neutral-900/60 border border-white/10 flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center text-sky-400 text-sm shrink-0">
+                    📅
+                  </div>
+                  <div>
+                    <div className="text-xl font-extrabold text-white">0</div>
+                    <div className="text-xs text-neutral-400">today</div>
+                  </div>
+                </div>
+
+                {/* Days in a row */}
+                <div className="p-4 rounded-2xl bg-neutral-900/60 border border-white/10 flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 text-sm shrink-0">
+                    🔥
+                  </div>
+                  <div>
+                    <div className="text-xl font-extrabold text-white">0</div>
+                    <div className="text-xs text-neutral-400">days in a row</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ACTIVITY & QUICK SHORTCUTS SECTION */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Left 2 Cols: Activity Feed */}
+                <div className="md:col-span-2 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Activity</span>
+                    <input
+                      type="text"
+                      placeholder="Search your activity"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1 text-xs rounded-lg bg-neutral-900 border border-white/10 text-white placeholder-neutral-500 outline-none focus:border-emerald-500/50 w-44"
                     />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-white">Eyeland Living Companion</h3>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                        ONLINE
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-300 mt-0.5">
-                      Hover over your top screen bezel anytime to expand and interact with Eyeland.
+
+                  <div className="p-6 rounded-2xl bg-neutral-900/50 border border-white/10 text-center flex flex-col items-center justify-center min-h-[140px]">
+                    <span className="text-2xl mb-2 text-neutral-600">⚡</span>
+                    <p className="text-xs text-neutral-400 max-w-sm">
+                      Nothing yet. When your AI finishes a job, it shows up here.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-neutral-400">
-                    Model: <strong className="text-emerald-400 font-semibold">{aiStatus.activeModel || 'gemini-3.5-flash'}</strong>
-                  </span>
+                {/* Right 1 Col: Quick Links */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-2">Shortcuts</span>
+
+                  <button
+                    onClick={() => setActiveNav('wardrobe')}
+                    className="w-full p-3 rounded-xl bg-neutral-900/70 border border-white/10 flex items-center justify-between text-left hover:border-purple-500/30 hover:bg-neutral-800/60 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center text-xs">
+                        👕
+                      </span>
+                      <span className="text-xs font-semibold text-neutral-200 group-hover:text-white">Wardrobe</span>
+                    </div>
+                    <span className="text-neutral-500 text-xs">›</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveNav('connections')}
+                    className="w-full p-3 rounded-xl bg-neutral-900/70 border border-white/10 flex items-center justify-between text-left hover:border-emerald-500/30 hover:bg-neutral-800/60 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xs">
+                        🔌
+                      </span>
+                      <span className="text-xs font-semibold text-neutral-200 group-hover:text-white">Connections</span>
+                    </div>
+                    <span className="text-neutral-500 text-xs">›</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveNav('general')}
+                    className="w-full p-3 rounded-xl bg-neutral-900/70 border border-white/10 flex items-center justify-between text-left hover:border-sky-500/30 hover:bg-neutral-800/60 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center text-xs">
+                        ⚙️
+                      </span>
+                      <span className="text-xs font-semibold text-neutral-200 group-hover:text-white">General</span>
+                    </div>
+                    <span className="text-neutral-500 text-xs">›</span>
+                  </button>
+
+                  <div className="p-2.5 rounded-xl bg-neutral-900/40 border border-white/5 flex items-center gap-2 text-neutral-400 text-[11px]">
+                    <span>🖐️</span>
+                    <span>Tip: Click companion eyes to pet!</span>
+                  </div>
                 </div>
+
               </div>
 
-              {/* Metric Cards Grid */}
-              <div className="grid grid-cols-4 gap-3">
-                {/* Stat 1 */}
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-neutral-400 text-xs">
-                    <span>CPU Telemetry</span>
-                    <span className="text-emerald-400">⚡</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-xl font-bold text-white font-mono">{systemInfo.cpu?.loadPercent || 8}%</span>
-                    <span className="text-[9.5px] text-neutral-500 block truncate">{systemInfo.cpu?.model || 'Windows Host'}</span>
-                  </div>
-                </div>
+            </div>
+          )}
 
-                {/* Stat 2 */}
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-neutral-400 text-xs">
-                    <span>RAM Memory</span>
-                    <span className="text-sky-400">💾</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-xl font-bold text-white font-mono">{systemInfo.memory?.usedGb || '8.2'} GB</span>
-                    <span className="text-[9.5px] text-neutral-500 block">of {systemInfo.memory?.totalGb || '16.0'} GB used</span>
-                  </div>
-                </div>
-
-                {/* Stat 3 */}
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-neutral-400 text-xs">
-                    <span>AI Engine</span>
-                    <span className="text-purple-400">🤖</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-xl font-bold text-white font-mono">Gemini 3.5</span>
-                    <span className="text-[9.5px] text-emerald-400 block font-semibold">Zero-Setup Ready</span>
-                  </div>
-                </div>
-
-                {/* Stat 4 */}
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-neutral-400 text-xs">
-                    <span>Battery Status</span>
-                    <span className="text-amber-400">🔋</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-xl font-bold text-white font-mono">{systemInfo.battery?.percent || 100}%</span>
-                    <span className="text-[9.5px] text-neutral-500 block">
-                      {systemInfo.battery?.isCharging ? 'AC Power Connected' : 'Discharging'}
+          {/* =================================================================
+              DUMMY TABS (Configurable one by one later)
+              ================================================================= */}
+          {activeNav !== 'home' && (
+            <div className="space-y-5 max-w-4xl animate-fadeIn">
+              
+              {/* Tab Header */}
+              <div className="border-b border-white/[0.08] pb-4 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">
+                      {navGroups.flatMap(g => g.items).find(i => i.id === activeNav)?.icon}
+                    </span>
+                    <h2 className="text-xl font-bold text-white tracking-tight">
+                      {navGroups.flatMap(g => g.items).find(i => i.id === activeNav)?.label}
+                    </h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold uppercase">
+                      Configuring
                     </span>
                   </div>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    This tab is ready for customization. Tell me what features or settings you'd like to configure here next!
+                  </p>
                 </div>
+
+                <button
+                  onClick={() => setActiveNav('home')}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 font-medium transition-colors cursor-pointer"
+                >
+                  ← Back to Home
+                </button>
               </div>
 
-              {/* Quick Actions & Placeholder Note */}
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-3">
+              {/* Placeholder Card 1: Main Section */}
+              <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/10 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white tracking-wide">Quick Controls</h4>
-                  <span className="text-[10px] font-mono text-neutral-500">Eyeland Windows Service</span>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>⚡ Configuration Panel</span>
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500">Eyeland 1.0</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center justify-between">
-                    <span>Startup on Boot</span>
-                    <span className="text-emerald-400 font-semibold text-[10px]">ENABLED</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center justify-between">
-                    <span>Multimodal Snip Vision</span>
-                    <span className="text-emerald-400 font-semibold text-[10px]">ACTIVE</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center justify-between">
-                    <span>Clipboard Auto-Sync</span>
-                    <span className="text-emerald-400 font-semibold text-[10px]">10 SLOTS</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* TAB 2: AI & MODELS */}
-          {activeNav === 'ai' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">AI & Model Settings</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Configure Google Gemini model preferences, reasoning modes, and API keys.
+                <p className="text-xs text-neutral-300 leading-relaxed">
+                  We have set up the complete layout and routing for the <strong>{navGroups.flatMap(g => g.items).find(i => i.id === activeNav)?.label}</strong> tab. 
+                  When you are ready, let me know what specific controls, toggles, forms, or data you would like to display here!
                 </p>
-              </div>
 
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-bold text-white">Active LLM Provider</h4>
-                    <p className="text-[10px] text-neutral-400 mt-0.5">
-                      Eyeland comes with a built-in pre-configured model for all users with zero configuration required.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
-                    ⚡ Gemini 3.5 Flash Active
-                  </span>
-                </div>
-
-                <div className="pt-2 border-t border-neutral-800 text-xs text-neutral-300 space-y-2">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-900 border border-neutral-800">
+                {/* Mock Settings Switch Rows */}
+                <div className="space-y-2 pt-2 border-t border-white/5">
+                  <div className="flex items-center justify-between py-2 border-b border-white/5">
                     <div>
-                      <span className="font-semibold text-white block">Current Model Lineup</span>
-                      <span className="text-[10px] text-neutral-400">gemini-3.5-flash • gemini-3.1-flash-lite • gemini-3.8-flash</span>
+                      <div className="text-xs font-semibold text-white">Enable Feature</div>
+                      <div className="text-[11px] text-neutral-400">Toggle this module for active background polling</div>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-400">Cloud TPU Verified</span>
+                    <div className="w-10 h-5 bg-emerald-500/30 border border-emerald-400/50 rounded-full flex items-center p-0.5 justify-end cursor-pointer">
+                      <div className="w-4 h-4 bg-emerald-400 rounded-full shadow"></div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2 border-b border-white/5">
+                    <div>
+                      <div className="text-xs font-semibold text-white">Auto-Sync Changes</div>
+                      <div className="text-[11px] text-neutral-400">Broadcast state updates directly to top bezel island</div>
+                    </div>
+                    <div className="w-10 h-5 bg-emerald-500/30 border border-emerald-400/50 rounded-full flex items-center p-0.5 justify-end cursor-pointer">
+                      <div className="w-4 h-4 bg-emerald-400 rounded-full shadow"></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-2">
-                <h4 className="text-xs font-bold text-white">Custom API Key (Optional)</h4>
-                <p className="text-[10px] text-neutral-400 leading-relaxed">
-                  Have your own Google AI Studio key? You can connect it for dedicated personal quotas or higher-tier models.
-                </p>
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="password"
-                    readOnly
-                    value="••••••••••••••••••••••••"
-                    className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-neutral-400 font-mono"
-                  />
-                  <span className="px-3 py-1.5 rounded-xl bg-neutral-800 text-neutral-400 text-xs font-mono">
-                    Protected in AppData
-                  </span>
+              {/* Placeholder Card 2: Diagnostics & Tips */}
+              <div className="p-4 rounded-2xl bg-neutral-900/30 border border-white/5 flex items-center justify-between text-xs text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400">●</span>
+                  <span>Tab ID: <code className="text-neutral-300 font-mono">activeNav = "{activeNav}"</code></span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: APPEARANCE */}
-          {activeNav === 'appearance' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Appearance & Themes</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Personalize Eyeland's companion expressions, eye color schemes, and glow intensity.
-                </p>
+                <span className="text-[11px] text-neutral-500 font-mono">Ready to populate</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Mint Glow</span>
-                    <span className="text-[9.5px] text-neutral-400">Default ambient signature</span>
-                  </div>
-                  <span className="w-4 h-4 rounded-full bg-[#c5f8d6] shadow-[0_0_8px_#c5f8d6]" />
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Cyber Cyan</span>
-                    <span className="text-[9.5px] text-neutral-400">High-tech sci-fi blue</span>
-                  </div>
-                  <span className="w-4 h-4 rounded-full bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Studio White</span>
-                    <span className="text-[9.5px] text-neutral-400">Clean minimalist aesthetic</span>
-                  </div>
-                  <span className="w-4 h-4 rounded-full bg-white shadow-[0_0_8px_white]" />
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#111116] border border-neutral-800/90 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Warm Amber</span>
-                    <span className="text-[9.5px] text-neutral-400">Cozy evening glow</span>
-                  </div>
-                  <span className="w-4 h-4 rounded-full bg-[#fbbf24] shadow-[0_0_8px_#fbbf24]" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: BEHAVIORS */}
-          {activeNav === 'behaviors' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Behaviors & System Hooks</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Configure bezel hover triggers, Windows autostart, and idle sleep sensitivity.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-white block">Launch on Windows Boot</span>
-                    <span className="text-[10px] text-neutral-400">Start Eyeland silently docked to top bezel</span>
-                  </div>
-                  <span className="text-emerald-400 font-mono font-semibold">ON</span>
-                </div>
-
-                <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-white block">Eye Follow & Cursor Tracking</span>
-                    <span className="text-[10px] text-neutral-400">Eyes look toward cursor dynamically across display</span>
-                  </div>
-                  <span className="text-emerald-400 font-mono font-semibold">ACTIVE</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: SHELF & STORAGE */}
-          {activeNav === 'shelf' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Storage & Staging Shelf</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Manage temporary staged files, clipboard history, and scratchpad data.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-semibold">Clipboard Retention Capacity</span>
-                  <span className="font-mono text-emerald-400">10 Most Recent Copies</span>
-                </div>
-                <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
-                  <span className="text-white font-semibold">Staging Shelf Mode</span>
-                  <span className="font-mono text-emerald-400">One-Page Drag & Drop</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: ABOUT */}
-          {activeNav === 'about' && (
-            <div className="space-y-4 max-w-4xl animate-fadeIn">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">About Eyeland</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  The living desktop bezel companion and assistant for Windows.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#111116] border border-neutral-800/90 space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Version</span>
-                  <span className="text-white font-mono font-semibold">1.0.0 (Windows Production Build)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Architecture</span>
-                  <span className="text-white font-mono">x64 (Windows 10 / 11)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Runtime</span>
-                  <span className="text-white font-mono">Electron + React + Vite</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">AI Intelligence</span>
-                  <span className="text-emerald-400 font-mono font-semibold">Google Gemini 3.5 Flash</span>
-                </div>
-              </div>
             </div>
           )}
 
         </main>
       </div>
+
     </div>
   );
 }

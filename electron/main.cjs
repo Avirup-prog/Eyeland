@@ -542,6 +542,76 @@ function createWindow() {
     return geminiService.saveApiKey(key);
   });
 
+  // Eyeland Hub Window Manager & IPC Handlers
+  let dashboardWindow = null;
+
+  function createDashboardWindow() {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+      if (dashboardWindow.isMinimized()) dashboardWindow.restore();
+      dashboardWindow.show();
+      dashboardWindow.focus();
+      return;
+    }
+
+    dashboardWindow = new BrowserWindow({
+      width: 1040,
+      height: 680,
+      minWidth: 840,
+      minHeight: 560,
+      frame: false,
+      transparent: true,
+      backgroundColor: '#00000000',
+      title: 'Eyeland Hub',
+      icon: path.join(__dirname, 'drag-icon.png'),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.cjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    const dashboardUrl = isDev
+      ? 'http://localhost:5173/?view=dashboard'
+      : `file://${path.join(__dirname, '../dist/index.html')}?view=dashboard`;
+
+    dashboardWindow.loadURL(dashboardUrl);
+
+    dashboardWindow.on('closed', () => {
+      dashboardWindow = null;
+    });
+  }
+
+  ipcMain.on('open-dashboard', () => {
+    createDashboardWindow();
+  });
+
+  ipcMain.on('minimize-dashboard', () => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+      dashboardWindow.minimize();
+    }
+  });
+
+  ipcMain.on('maximize-dashboard', () => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+      if (dashboardWindow.isMaximized()) {
+        dashboardWindow.unmaximize();
+      } else {
+        dashboardWindow.maximize();
+      }
+    }
+  });
+
+  ipcMain.on('close-dashboard', () => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+      dashboardWindow.close();
+    }
+  });
+
+  ipcMain.handle('is-dashboard-maximized', () => {
+    return dashboardWindow && !dashboardWindow.isDestroyed() ? dashboardWindow.isMaximized() : false;
+  });
+
   mainWindow.on('closed', () => {
     if (cursorPollInterval) clearInterval(cursorPollInterval);
     if (telemetryInterval) clearInterval(telemetryInterval);
