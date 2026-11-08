@@ -195,8 +195,9 @@ export default function App() {
         }
 
         const isExp = isHoveredRef.current || isPinnedRef.current || isGreetingActiveRef.current;
-        const currentW = isExp ? 540 : 230;
-        const currentH = isExp ? (isGreetingActiveRef.current && !isHoveredRef.current && !isPinnedRef.current ? 210 : 315) : 36;
+        const islandEl = document.getElementById('dynamic-island');
+        const currentW = islandEl ? islandEl.offsetWidth : (isExp ? 540 : 230);
+        const currentH = islandEl ? islandEl.offsetHeight : (isExp ? (isGreetingActiveRef.current && !isHoveredRef.current && !isPinnedRef.current ? 210 : 315) : 36);
 
         const islandLeft = data.windowX + (data.windowWidth - currentW) / 2;
         const islandRight = islandLeft + currentW;

@@ -207,6 +207,11 @@ export default function DynamicIsland({
   const btTimerRef = useRef(null);
   const prevBtConnectedRef = useRef(new Set());
 
+  // Live Hardware Master Volume & Screen Brightness HUD State
+  const [activeHud, setActiveHud] = useState(null); // { type: 'volume' | 'brightness', value: number, muted?: boolean }
+  const [hardwareLevels, setHardwareLevels] = useState({ volume: 100, muted: false, brightness: 80 });
+  const hudTimerRef = useRef(null);
+
   const [indicatorTimestamps, setIndicatorTimestamps] = useState({
     music: Date.now(),
     bluetooth: 0,
@@ -653,6 +658,56 @@ export default function DynamicIsland({
         }
       });
       return cleanup;
+    }
+  }, []);
+
+  // Real-Time Hardware Master Volume & Screen Brightness HUD Listener
+  useEffect(() => {
+    if (window.electronAPI?.getHardwareState) {
+      window.electronAPI.getHardwareState().then((state) => {
+        if (state) {
+          setHardwareLevels({
+            volume: typeof state.volume === 'number' ? state.volume : 100,
+            muted: Boolean(state.muted),
+            brightness: typeof state.brightness === 'number' ? state.brightness : 80,
+          });
+        }
+      }).catch(() => {});
+    }
+
+    if (window.electronAPI?.onHardwareHud) {
+      const cleanup = window.electronAPI.onHardwareHud((data) => {
+        if (!data || !data.type) return;
+
+        setHardwareLevels((prev) => ({
+          ...prev,
+          ...(data.type === 'volume'
+            ? { volume: data.value, muted: Boolean(data.muted) }
+            : { brightness: data.value }),
+        }));
+
+        // Morph Island into responsive Volume / Brightness HUD bar
+        setActiveHud({
+          type: data.type,
+          value: data.value,
+          muted: Boolean(data.muted),
+        });
+
+        if (hudTimerRef.current) {
+          clearTimeout(hudTimerRef.current);
+        }
+
+        // Auto-collapse back to companion eyes after 1800ms of inactivity
+        hudTimerRef.current = setTimeout(() => {
+          setActiveHud(null);
+          hudTimerRef.current = null;
+        }, 1800);
+      });
+
+      return () => {
+        cleanup();
+        if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+      };
     }
   }, []);
 
@@ -1937,8 +1992,9 @@ export default function DynamicIsland({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isLyricsMode = !isExpanded && isPlaying && hasLyrics;
-  const isFocusModeCollapsed = !isExpanded && isFocusRunning && !isLyricsMode;
+  const isHudMode = !isExpanded && activeHud !== null;
+  const isLyricsMode = !isExpanded && !isHudMode && isPlaying && hasLyrics;
+  const isFocusModeCollapsed = !isExpanded && !isHudMode && isFocusRunning && !isLyricsMode;
 
   // Dynamic Companion Eye Expression & Color for Focus Mode vs Idle
   const activeEyeExpression = isFocusRunning 
@@ -2194,6 +2250,16 @@ export default function DynamicIsland({
         height: isGreetingActive && !isHovered && !isPinned ? '210px' : '315px',
         borderRadius: '24px',
       }
+    : isHudMode
+    ? {
+        width: '270px',
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: activeHud.type === 'volume'
+          ? '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(56, 189, 248, 0.25)'
+          : '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(251, 191, 36, 0.25)',
+        borderColor: activeHud.type === 'volume' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)',
+      }
     : isLyricsMode
     ? {
         width: '380px',
@@ -2228,10 +2294,81 @@ export default function DynamicIsland({
     >
 
       {/* ======================================================== */}
-      {/* 1. COLLAPSED ISLAND: LYRICS vs FOCUS vs STANDARD 3-ZONE  */}
+      {/* 1. COLLAPSED ISLAND: HUD vs LYRICS vs FOCUS vs 3-ZONE    */}
       {/* ======================================================== */}
       {!isExpanded && (
-        isLyricsMode ? (
+        isHudMode ? (
+          /* HARDWARE VOLUME / BRIGHTNESS HUD PILL */
+          <div
+            className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
+            onClick={triggerRejoice}
+            onWheel={(e) => {
+              e.preventDefault();
+              const delta = e.deltaY < 0 ? 5 : -5;
+              if (activeHud.type === 'volume') {
+                const nextVol = Math.max(0, Math.min(100, (activeHud.value || 0) + delta));
+                window.electronAPI?.setHardwareVolume?.(nextVol);
+                setActiveHud((prev) => prev ? { ...prev, value: nextVol } : null);
+              } else {
+                const nextBri = Math.max(0, Math.min(100, (activeHud.value || 0) + delta));
+                window.electronAPI?.setHardwareBrightness?.(nextBri);
+                setActiveHud((prev) => prev ? { ...prev, value: nextBri } : null);
+              }
+              if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+              hudTimerRef.current = setTimeout(() => {
+                setActiveHud(null);
+                hudTimerRef.current = null;
+              }, 1800);
+            }}
+            title={
+              activeHud.type === 'volume'
+                ? `System Master Volume: ${activeHud.value}% ${activeHud.muted ? '(MUTED)' : ''} • Scroll mouse wheel to adjust`
+                : `Screen Brightness: ${activeHud.value}% • Scroll mouse wheel to adjust`
+            }
+          >
+            {/* Left: Dynamic Reactive Icon */}
+            <div className="flex-shrink-0 flex items-center justify-center w-5">
+              {activeHud.type === 'volume' ? (
+                activeHud.muted || activeHud.value === 0 ? (
+                  <span className="text-[13px] text-neutral-400">🔇</span>
+                ) : activeHud.value < 35 ? (
+                  <span className="text-[13px] text-sky-300">🔈</span>
+                ) : activeHud.value < 70 ? (
+                  <span className="text-[13px] text-sky-400">🔉</span>
+                ) : (
+                  <span className="text-[13px] text-sky-400">🔊</span>
+                )
+              ) : (
+                <span className="text-[14px] text-amber-400 animate-pulse">☀️</span>
+              )}
+            </div>
+
+            {/* Center: Glowing Progress Capsule Track */}
+            <div className="flex-1 mx-3 h-2 bg-neutral-900/90 rounded-full overflow-hidden p-[1px] border border-neutral-700/60 shadow-inner">
+              <div
+                className={`h-full rounded-full transition-all duration-150 ease-out ${
+                  activeHud.type === 'volume'
+                    ? activeHud.muted
+                      ? 'bg-neutral-500'
+                      : 'bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]'
+                    : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-300 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                }`}
+                style={{ width: `${Math.max(0, Math.min(100, activeHud.value))}%` }}
+              />
+            </div>
+
+            {/* Right: Percentage / Status Label */}
+            <div className="flex-shrink-0 min-w-[34px] text-right font-mono text-[11px] font-bold tracking-tight">
+              {activeHud.type === 'volume' && activeHud.muted ? (
+                <span className="text-rose-400 text-[9.5px] uppercase">MUTE</span>
+              ) : (
+                <span className={activeHud.type === 'volume' ? 'text-sky-300' : 'text-amber-300'}>
+                  {activeHud.value}%
+                </span>
+              )}
+            </div>
+          </div>
+        ) : isLyricsMode ? (
           /* LYRICS MODE: Expands to fit rolling lyrics, hides eyes, shows only lyrics + music playing icon */
           <div
             className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
@@ -4028,6 +4165,62 @@ export default function DynamicIsland({
                       </div>
                     </div>
 
+                  </div>
+
+                  {/* MASTER HARDWARE CONTROLS: REAL-TIME VOLUME & BRIGHTNESS SLIDERS */}
+                  <div className="py-1 px-2 bg-[#0e0e12]/90 rounded-xl border border-neutral-800/80 my-1 flex items-center gap-3 shadow-inner">
+                    {/* Master Audio Slider */}
+                    <div className="flex-1 flex items-center gap-1.5 min-w-0" title={`Master Audio Volume: ${hardwareLevels.volume}%`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextMute = !hardwareLevels.muted;
+                          window.electronAPI?.setHardwareMute?.(nextMute);
+                          setHardwareLevels((prev) => ({ ...prev, muted: nextMute }));
+                        }}
+                        title={hardwareLevels.muted ? 'Unmute Audio' : 'Mute Audio'}
+                        className="text-[11px] text-neutral-400 hover:text-white transition-colors flex-shrink-0 cursor-pointer"
+                      >
+                        {hardwareLevels.muted || hardwareLevels.volume === 0 ? '🔇' : hardwareLevels.volume < 50 ? '🔉' : '🔊'}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={hardwareLevels.volume}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          setHardwareLevels((prev) => ({ ...prev, volume: v, muted: false }));
+                          window.electronAPI?.setHardwareVolume?.(v);
+                        }}
+                        className="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                      />
+                      <span className="font-mono text-[8.5px] text-sky-300 min-w-[22px] text-right font-semibold">
+                        {hardwareLevels.muted ? 'MUTE' : `${hardwareLevels.volume}%`}
+                      </span>
+                    </div>
+
+                    <div className="w-px h-3 bg-neutral-800" />
+
+                    {/* Master Brightness Slider */}
+                    <div className="flex-1 flex items-center gap-1.5 min-w-0" title={`Screen Brightness: ${hardwareLevels.brightness}%`}>
+                      <span className="text-[11px] text-amber-400 flex-shrink-0">☀️</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={hardwareLevels.brightness}
+                        onChange={(e) => {
+                          const b = parseInt(e.target.value, 10);
+                          setHardwareLevels((prev) => ({ ...prev, brightness: b }));
+                          window.electronAPI?.setHardwareBrightness?.(b);
+                        }}
+                        className="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                      />
+                      <span className="font-mono text-[8.5px] text-amber-300 min-w-[22px] text-right font-semibold">
+                        {hardwareLevels.brightness}%
+                      </span>
+                    </div>
                   </div>
 
                   {/* BOTTOM COMMAND & IDENTITY BAR */}

@@ -20,6 +20,7 @@ try {
 
 const { getWifiData, getBluetoothData, getBatteryData, getCameraAndMicUsage, getFullTelemetry } = require('./systemInfo.cjs');
 const { getLiveMedia, onMediaChange, sendMediaControl, searchTrackMetadata, getSongLyrics, stopMediaDaemon } = require('./mediaService.cjs');
+const { onHardwareHud, setVolume, setMute, setBrightness, getHardwareState, stopHardwareDaemon } = require('./hardwareService.cjs');
 const geminiService = require('./geminiService.cjs');
 
 let mainWindow;
@@ -265,6 +266,34 @@ function createWindow() {
     if (mainWindow && !mainWindow.isDestroyed() && media) {
       mainWindow.webContents.send('media-update', media);
     }
+  });
+
+  // Real-Time Hardware Volume & Screen Brightness HUD Listener
+  const unsubscribeHardware = onHardwareHud((hudData) => {
+    if (mainWindow && !mainWindow.isDestroyed() && hudData) {
+      mainWindow.webContents.send('hardware-hud', hudData);
+    }
+  });
+
+  // Hardware Audio & Brightness Control IPC Handlers
+  ipcMain.handle('get-hardware-state', () => {
+    try {
+      return getHardwareState();
+    } catch {
+      return { volume: 100, muted: false, brightness: 80, initialized: false };
+    }
+  });
+
+  ipcMain.handle('set-hardware-volume', (event, val) => {
+    return setVolume(val);
+  });
+
+  ipcMain.handle('set-hardware-mute', (event, muted) => {
+    return setMute(muted);
+  });
+
+  ipcMain.handle('set-hardware-brightness', (event, val) => {
+    return setBrightness(val);
   });
 
   // Dynamic click-through passthrough for transparent background areas
@@ -618,6 +647,7 @@ function createWindow() {
     if (privacyPollInterval) clearInterval(privacyPollInterval);
     if (clipboardPollInterval) clearInterval(clipboardPollInterval);
     if (unsubscribeMedia) unsubscribeMedia();
+    if (unsubscribeHardware) unsubscribeHardware();
     mainWindow = null;
   });
 }
@@ -643,9 +673,11 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   stopMediaDaemon();
+  stopHardwareDaemon();
 });
 
 app.on('window-all-closed', () => {
   stopMediaDaemon();
+  stopHardwareDaemon();
   if (process.platform !== 'darwin') app.quit();
 });

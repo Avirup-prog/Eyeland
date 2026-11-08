@@ -81,5 +81,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeDashboard: () => ipcRenderer.send('close-dashboard'),
   isDashboardMaximized: () => ipcRenderer.invoke('is-dashboard-maximized'),
 
+  // Real-Time Hardware Volume & Screen Brightness HUD APIs
+  onHardwareHud: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('hardware-hud', handler);
+    return () => ipcRenderer.removeListener('hardware-hud', handler);
+  },
+  getHardwareState: () => ipcRenderer.invoke('get-hardware-state'),
+  setHardwareVolume: (val) => ipcRenderer.invoke('set-hardware-volume', val),
+  setHardwareMute: (muted) => ipcRenderer.invoke('set-hardware-mute', muted),
+  setHardwareBrightness: (val) => ipcRenderer.invoke('set-hardware-brightness', val),
+
   platform: process.platform,
 });
