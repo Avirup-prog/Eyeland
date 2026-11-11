@@ -200,7 +200,12 @@ function getBatteryData() {
   });
 }
 
-const MIC_CHECK_BIN = path.join(__dirname, 'micCheck.exe');
+const MIC_CHECK_BIN = (function() {
+  const normalPath = path.join(__dirname, 'micCheck.exe');
+  const unpackedPath = normalPath.replace('app.asar', 'app.asar.unpacked');
+  if (fs.existsSync(unpackedPath)) return unpackedPath;
+  return normalPath;
+})();
 
 function checkMicViaCoreAudio() {
   return new Promise((resolve) => {

@@ -1,10 +1,18 @@
 const { spawn, exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const readline = require('readline');
 
-const getMediaScriptPath = path.join(__dirname, 'getMedia.ps1');
-const mediaDaemonScriptPath = path.join(__dirname, 'mediaDaemon.ps1');
-const sendMediaScriptPath = path.join(__dirname, 'sendMediaKey.ps1');
+function resolveScript(name) {
+  const normalPath = path.join(__dirname, name);
+  const unpackedPath = normalPath.replace('app.asar', 'app.asar.unpacked');
+  if (fs.existsSync(unpackedPath)) return unpackedPath;
+  return normalPath;
+}
+
+const getMediaScriptPath = resolveScript('getMedia.ps1');
+const mediaDaemonScriptPath = resolveScript('mediaDaemon.ps1');
+const sendMediaScriptPath = resolveScript('sendMediaKey.ps1');
 
 const { hasDevanagari, devanagariToHinglish } = require('./hindiRomanizer.cjs');
 

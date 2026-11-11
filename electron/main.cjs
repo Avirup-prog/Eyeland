@@ -159,25 +159,29 @@ function createWindow() {
 
   const distPath = path.join(__dirname, '../dist/index.html');
 
-  // Fast 150ms probe to check if Vite dev server is running
-  const probeReq = http.get('http://127.0.0.1:5173', (res) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadURL('http://localhost:5173');
-    }
-  });
+  if (app.isPackaged) {
+    mainWindow.loadFile(distPath);
+  } else {
+    // Fast 150ms probe to check if Vite dev server is running
+    const probeReq = http.get('http://127.0.0.1:5173', (res) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadURL('http://localhost:5173');
+      }
+    });
 
-  probeReq.on('error', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadFile(distPath);
-    }
-  });
+    probeReq.on('error', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadFile(distPath);
+      }
+    });
 
-  probeReq.setTimeout(150, () => {
-    probeReq.destroy();
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadFile(distPath);
-    }
-  });
+    probeReq.setTimeout(150, () => {
+      probeReq.destroy();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadFile(distPath);
+      }
+    });
+  }
 
   // Diagnostics: Catch renderer console output and load failures
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
@@ -611,12 +615,12 @@ function createWindow() {
       },
     });
 
-    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-    const dashboardUrl = isDev
-      ? 'http://localhost:5173/?view=dashboard'
-      : `file://${path.join(__dirname, '../dist/index.html')}?view=dashboard`;
-
-    dashboardWindow.loadURL(dashboardUrl);
+    const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+    if (isDev) {
+      dashboardWindow.loadURL('http://localhost:5173/?view=dashboard');
+    } else {
+      dashboardWindow.loadFile(distPath, { query: { view: 'dashboard' }, hash: 'dashboard' });
+    }
 
     dashboardWindow.on('closed', () => {
       dashboardWindow = null;

@@ -3,7 +3,14 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 
-const DAEMON_BIN = path.join(__dirname, 'hardwareDaemon.exe');
+function resolveBinary(name) {
+  const normalPath = path.join(__dirname, name);
+  const unpackedPath = normalPath.replace('app.asar', 'app.asar.unpacked');
+  if (fs.existsSync(unpackedPath)) return unpackedPath;
+  return normalPath;
+}
+
+const DAEMON_BIN = resolveBinary('hardwareDaemon.exe');
 
 let daemonProcess = null;
 let hardwareListeners = new Set();
