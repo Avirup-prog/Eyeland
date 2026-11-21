@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSystemTelemetry: () => ipcRenderer.invoke('get-system-telemetry'),
   getWifiData: () => ipcRenderer.invoke('get-wifi-data'),
   getBluetoothData: () => ipcRenderer.invoke('get-bluetooth-data'),
+  getRadioState: () => ipcRenderer.invoke('get-radio-state'),
+  setRadioState: (params) => ipcRenderer.invoke('set-radio-state', params),
+  connectWifiNetwork: (ssid) => ipcRenderer.invoke('connect-wifi-network', ssid),
+  disconnectWifi: () => ipcRenderer.invoke('disconnect-wifi'),
+  openWindowsSettings: (uri) => ipcRenderer.invoke('open-windows-settings', uri),
   getLiveMedia: () => ipcRenderer.invoke('get-live-media'),
   refreshLiveMedia: () => ipcRenderer.invoke('refresh-live-media'),
   sendMediaControl: (action) => ipcRenderer.invoke('send-media-control', action),
@@ -28,6 +33,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('telemetry-update', handler);
     return () => ipcRenderer.removeListener('telemetry-update', handler);
+  },
+  onDeviceConnected: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('device-connected', handler);
+    return () => ipcRenderer.removeListener('device-connected', handler);
   },
 
   // Native File Staging Shelf APIs (Drag In, Drag Out, Show in Explorer)
@@ -59,13 +69,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   writeClipboardText: (text) => ipcRenderer.invoke('write-clipboard-text', text),
   getClipboardText: () => ipcRenderer.invoke('get-clipboard-text'),
+  clearClipboard: () => ipcRenderer.invoke('clear-clipboard'),
 
   // Screen Snipping Tool APIs (+ Crosshair overlay)
   startSnipping: (toolName) => ipcRenderer.invoke('start-snipping', toolName),
+  cancelSnipping: () => ipcRenderer.send('snipper-cancel'),
   onSnippedResult: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('snipped-result', handler);
     return () => ipcRenderer.removeListener('snipped-result', handler);
+  },
+  onSnipperStatus: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('snipper-status', handler);
+    return () => ipcRenderer.removeListener('snipper-status', handler);
   },
 
   // Gemini Real LLM APIs
@@ -74,6 +91,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   geminiGetApiKey: () => ipcRenderer.invoke('gemini-get-api-key'),
   geminiGetStatus: () => ipcRenderer.invoke('gemini-get-status'),
   geminiSaveApiKey: (key) => ipcRenderer.invoke('gemini-save-api-key', key),
+  geminiSaveModel: (modelId) => ipcRenderer.invoke('gemini-save-model', modelId),
+  geminiTestConnection: (params) => ipcRenderer.invoke('gemini-test-connection', params),
 
   // Windows Dashboard Application Window APIs
   openDashboard: () => ipcRenderer.send('open-dashboard'),
@@ -81,6 +100,49 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeDashboard: () => ipcRenderer.send('maximize-dashboard'),
   closeDashboard: () => ipcRenderer.send('close-dashboard'),
   isDashboardMaximized: () => ipcRenderer.invoke('is-dashboard-maximized'),
+
+  // Bidirectional Hub <-> Island Realtime Actions
+  sendHubAction: (action) => ipcRenderer.send('hub-action', action),
+  onHubAction: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('hub-action', handler);
+    return () => ipcRenderer.removeListener('hub-action', handler);
+  },
+  sendIslandAction: (action) => ipcRenderer.send('island-action', action),
+  onIslandAction: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('island-action', handler);
+    return () => ipcRenderer.removeListener('island-action', handler);
+  },
+
+  // Automatic Updates via GitHub Releases
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadAndInstallUpdate: () => ipcRenderer.send('download-and-install-update'),
+  restartAndInstallUpdate: () => ipcRenderer.send('restart-and-install-update'),
+  simulateUpdateTest: (version) => ipcRenderer.send('simulate-update-test', version),
+  simulateDownloadAndInstall: (version) => ipcRenderer.send('simulate-download-and-install', version),
+  onUpdateStatus: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('update-status', handler);
+    return () => ipcRenderer.removeListener('update-status', handler);
+  },
+
+  // App Lifecycle Controls (Island Options Menu)
+  restartApp: () => ipcRenderer.send('restart-app'),
+  exitApp: () => ipcRenderer.send('exit-app'),
+
+  // Founding Beta Tester Account Registration
+  getBetaTester: () => ipcRenderer.invoke('get-beta-tester'),
+  registerBetaTester: (email) => ipcRenderer.invoke('register-beta-tester', email),
+
+  // General Settings (Language, Speed, Performance, Game Mode)
+  getGeneralSettings: () => ipcRenderer.invoke('get-general-settings'),
+  saveGeneralSettings: (settings) => ipcRenderer.invoke('save-general-settings', settings),
+
+  // Island Display Settings & Monitor Selection
+  getDisplays: () => ipcRenderer.invoke('get-displays'),
+  getIslandDisplay: () => ipcRenderer.invoke('get-island-display'),
+  saveIslandDisplay: (settings) => ipcRenderer.invoke('save-island-display', settings),
 
   // Real-Time Hardware Volume & Screen Brightness HUD APIs
   onHardwareHud: (callback) => {

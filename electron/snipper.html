@@ -9,58 +9,62 @@
       padding: 0;
       box-sizing: border-box;
       user-select: none;
+      cursor: crosshair !important;
     }
     html, body {
       width: 100vw;
       height: 100vh;
       overflow: hidden;
       background: transparent;
-      cursor: crosshair;
+      cursor: crosshair !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     #container {
       position: relative;
       width: 100vw;
       height: 100vh;
+      cursor: crosshair !important;
+      background: transparent;
     }
-    #bg-canvas, #overlay-canvas {
+    #overlay-canvas {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
+      cursor: crosshair !important;
     }
     #hud-hint {
       position: fixed;
-      top: 24px;
+      bottom: 36px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 15, 20, 0.88);
+      background: rgba(15, 15, 20, 0.94);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(56, 189, 248, 0.4);
+      border: 1px solid rgba(56, 189, 248, 0.45);
       color: #e2e8f0;
-      padding: 6px 16px;
+      padding: 8px 20px;
       border-radius: 9999px;
       font-size: 11px;
       font-family: monospace;
       letter-spacing: 0.5px;
       display: flex;
-      items-center: center;
+      align-items: center;
       gap: 10px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.2);
       pointer-events: none;
       z-index: 100;
-      animation: fadeInDown 0.2s ease-out;
+      animation: fadeInUp 0.2s ease-out;
+      cursor: crosshair !important;
     }
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translate(-50%, -10px); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translate(-50%, 10px); }
       to { opacity: 1; transform: translate(-50%, 0); }
     }
   </style>
 </head>
 <body>
   <div id="container">
-    <canvas id="bg-canvas"></canvas>
     <canvas id="overlay-canvas"></canvas>
 
     <div id="hud-hint">
@@ -73,42 +77,31 @@
   </div>
 
   <script>
-    const bgCanvas = document.getElementById('bg-canvas');
     const overlayCanvas = document.getElementById('overlay-canvas');
-    const bgCtx = bgCanvas.getContext('2d');
     const overlayCtx = overlayCanvas.getContext('2d');
     const toolLabel = document.getElementById('tool-label');
 
-    let bgImage = new Image();
-    let isImageLoaded = false;
     let isMouseDown = false;
     let startX = 0;
     let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
+    let currentX = -100;
+    let currentY = -100;
     let activeTool = 'explain';
     let dpr = window.devicePixelRatio || 1;
 
     function resize() {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      bgCanvas.width = w * dpr;
-      bgCanvas.height = h * dpr;
-      bgCanvas.style.width = w + 'px';
-      bgCanvas.style.height = h + 'px';
-
       overlayCanvas.width = w * dpr;
       overlayCanvas.height = h * dpr;
       overlayCanvas.style.width = w + 'px';
       overlayCanvas.style.height = h + 'px';
-
-      if (isImageLoaded) {
-        bgCtx.drawImage(bgImage, 0, 0, bgCanvas.width, bgCanvas.height);
-      }
       drawOverlay();
     }
 
     window.addEventListener('resize', resize);
+    window.addEventListener('DOMContentLoaded', resize);
+    resize();
 
     if (window.snipperAPI?.onInit) {
       window.snipperAPI.onInit((data) => {
@@ -116,13 +109,7 @@
           activeTool = data.toolName;
           toolLabel.textContent = data.toolName.toUpperCase();
         }
-        if (data.screenDataUrl) {
-          bgImage.onload = () => {
-            isImageLoaded = true;
-            resize();
-          };
-          bgImage.src = data.screenDataUrl;
-        }
+        resize();
       });
     }
 
@@ -132,12 +119,12 @@
       overlayCtx.clearRect(0, 0, w, h);
 
       if (!isMouseDown) {
-        // Subtle global screen dimming
-        overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        // Subtle global screen dimming so background window is clearly visible
+        overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.25)';
         overlayCtx.fillRect(0, 0, w, h);
 
         // Draw precision crosshair reticle following cursor
-        if (currentX > 0 && currentY > 0) {
+        if (currentX >= 0 && currentY >= 0) {
           const cx = currentX * dpr;
           const cy = currentY * dpr;
 
@@ -182,8 +169,8 @@
       const selW = Math.abs(currentX - startX) * dpr;
       const selH = Math.abs(currentY - startY) * dpr;
 
-      // 1. Dim outside the selection box
-      overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      // 1. Dim outside the selection box, leaving the interior 100% transparent and clear
+      overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.52)';
       overlayCtx.fillRect(0, 0, w, selY); // Top
       overlayCtx.fillRect(0, selY + selH, w, h - (selY + selH)); // Bottom
       overlayCtx.fillRect(0, selY, selX, selH); // Left
@@ -302,38 +289,16 @@
         return;
       }
 
-      const cropX = Math.round(Math.min(startX, currentX) * dpr);
-      const cropY = Math.round(Math.min(startY, currentY) * dpr);
-      const cropW = Math.round(selW * dpr);
-      const cropH = Math.round(selH * dpr);
-
-      try {
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = cropW;
-        cropCanvas.height = cropH;
-        const cropCtx = cropCanvas.getContext('2d');
-
-        // Draw cropped portion from original background image
-        cropCtx.drawImage(bgCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-        const dataUrl = cropCanvas.toDataURL('image/png');
-        if (window.snipperAPI?.finishSnipping) {
-          window.snipperAPI.finishSnipping({
-            dataUrl,
-            bounds: {
-              x: Math.min(startX, currentX),
-              y: Math.min(startY, currentY),
-              width: selW,
-              height: selH,
-            },
-            toolName: activeTool,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to crop canvas:', err);
-        if (window.snipperAPI?.cancelSnipping) {
-          window.snipperAPI.cancelSnipping();
-        }
+      if (window.snipperAPI?.finishSnipping) {
+        window.snipperAPI.finishSnipping({
+          bounds: {
+            x: Math.min(startX, currentX),
+            y: Math.min(startY, currentY),
+            width: selW,
+            height: selH,
+          },
+          toolName: activeTool,
+        });
       }
     });
 

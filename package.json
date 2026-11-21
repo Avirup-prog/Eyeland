@@ -13,6 +13,7 @@
     "dist": "vite build && electron-builder",
     "dist:portable": "vite build && electron-builder --win portable",
     "dist:installer": "vite build && electron-builder --win nsis",
+    "dist:publish": "vite build && electron-builder --win nsis --publish always",
     "website": "npx serve website"
   },
   "build": {
@@ -55,14 +56,23 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Eyeland"
+      "shortcutName": "Eyeland",
+      "artifactName": "Eyeland-Setup-${version}.${ext}"
     },
     "portable": {
       "artifactName": "Eyeland-Portable-${version}.exe"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Avirup-prog",
+        "repo": "Eyeland"
+      }
+    ]
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
+    "electron-updater": "^6.8.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

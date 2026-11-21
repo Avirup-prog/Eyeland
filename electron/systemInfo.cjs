@@ -101,7 +101,22 @@ function getWifiData() {
 // 2. Real Bluetooth Query via PowerShell
 function getBluetoothData() {
   return new Promise((resolve) => {
-    const ps = 'Get-PnpDevice -Class Bluetooth | Select-Object FriendlyName, Status, Present | ConvertTo-Json';
+    const ps = `
+      $bt = Get-PnpDevice -Class Bluetooth -Status OK -PresentOnly |
+        Where-Object { $_.FriendlyName -and $_.InstanceId -match 'DEV_' } |
+        ForEach-Object {
+          $prop = Get-PnpDeviceProperty -InstanceId $_.InstanceId -KeyName '{83da6326-97a6-4088-9453-a1923f573b29} 15' -ErrorAction SilentlyContinue
+          $isConn = ($prop -and $prop.Data -eq $true)
+          if ($isConn) {
+            [PSCustomObject]@{
+              FriendlyName = $_.FriendlyName
+              Status = $_.Status
+              Connected = $true
+            }
+          }
+        }
+      if ($bt) { @($bt) | ConvertTo-Json -Compress } else { '[]' }
+    `;
     const encoded = Buffer.from(ps, 'utf16le').toString('base64');
     exec(`powershell -NoProfile -EncodedCommand ${encoded}`, (err, stdout) => {
       let adapterPresent = true;
@@ -109,20 +124,20 @@ function getBluetoothData() {
 
       if (!err && stdout) {
         try {
-          const list = JSON.parse(stdout);
+          const list = JSON.parse(stdout.trim());
           const arr = Array.isArray(list) ? list : [list];
 
           for (const item of arr) {
             const name = item.FriendlyName || '';
-            if (/Adapter/i.test(name) && item.Present) {
+            if (/Adapter/i.test(name)) {
               adapterPresent = true;
             }
             if (!/Enumerator|RFCOMM|Adapter|Avrcp/i.test(name) && name.trim()) {
               let type = 'bluetooth';
-              if (/buds|airpod|headphone|wh-|ear|audio|ranger/i.test(name)) type = 'headphones';
+              if (/buds|airpod|headphone|wh-|ear|audio/i.test(name)) type = 'headphones';
               else if (/keyboard|k2|k3/i.test(name)) type = 'keyboard';
               else if (/mouse|mx/i.test(name)) type = 'mouse';
-              else if (/gamepad|dualsense|bot/i.test(name)) type = 'gamepad';
+              else if (/gamepad|dualsense|controller/i.test(name)) type = 'gamepad';
 
               const cleanName = name.replace(/tr.ke/i, 'trüke').trim();
               if (!devices.some((d) => d.name === cleanName)) {
@@ -130,8 +145,8 @@ function getBluetoothData() {
                   id: devices.length + 1,
                   name: cleanName,
                   type,
-                  connected: item.Present === true,
-                  status: item.Status || 'Paired',
+                  connected: item.Connected === true,
+                  status: item.Status || 'Connected',
                 });
               }
             }
@@ -147,8 +162,6 @@ function getBluetoothData() {
         devices: devices.length > 0 ? devices : [
           { id: 1, name: 'WH-CH520', type: 'headphones', connected: false },
           { id: 2, name: 'Airdopes 311 Pro', type: 'headphones', connected: false },
-          { id: 3, name: 'Smokin\' Buds', type: 'headphones', connected: false },
-          { id: 4, name: 'SpinBot Ranger HX300', type: 'gamepad', connected: false },
         ],
       });
     });

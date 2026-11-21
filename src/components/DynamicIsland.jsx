@@ -1,5 +1,55 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import MinimalEyes from './MinimalEyes.jsx';
+import CompanionCoreAvatar from './CompanionCoreAvatar.jsx';
+import {
+  IconCpu,
+  IconRam,
+  IconWifi,
+  IconBattery,
+  IconBatteryCharging,
+  IconVolumeMute,
+  IconVolumeLow,
+  IconVolumeMid,
+  IconVolumeHigh,
+  IconBrightness,
+  IconSnipping,
+  IconClipboard,
+  IconCheck,
+  IconCopy,
+  IconTrash,
+  IconDownload,
+  IconClock,
+  IconFlame,
+  IconBell,
+  IconBellOff,
+  IconTarget,
+  IconCoffee,
+  IconPalm,
+  IconSparkles,
+  IconBot,
+  IconAiChat,
+  IconCamera,
+  IconPaperclip,
+  IconFileText,
+  IconFolder,
+  IconImage,
+  IconCode,
+  IconAudio,
+  IconVideo,
+  IconArchive,
+  IconZap,
+  IconKey,
+  IconRefresh,
+  IconMail,
+  IconLightbulb,
+  IconGlobe,
+  IconNotes,
+  IconWave,
+  IconSupport,
+  IconX,
+} from './Icons.jsx';
+import { getTranslations } from '../config/i18n.js';
+import { DEFAULT_ISLAND_DISPLAY, GLASS_COLOR_OPTIONS, hexToRgbTuple } from '../config/islandDisplay.js';
 import { extractDominantColor } from '../utils/colorExtractor.js';
 import { devanagariToHinglish, hasDevanagari } from '../utils/hindiRomanizer.js';
 
@@ -23,7 +73,11 @@ function formatInline(text) {
 
 function renderFormattedMessage(content) {
   if (!content) return null;
-  const parts = content.split(/(```[\s\S]*?```)/g);
+  const cleaned = String(content)
+    .replace(/^#+\s*\*{0,2}(?:Eyeland|Neural|Multimodal|Analysis Report|AI Report)[^\n]*\n+/gi, '')
+    .replace(/^\*{1,2}(?:Eyeland|Neural|Multimodal|Analysis Report|AI Report)[^\n]*\*{1,2}\n+/gi, '')
+    .trim();
+  const parts = cleaned.split(/(```[\s\S]*?```)/g);
 
   return parts.map((part, idx) => {
     if (part.startsWith('```') && part.endsWith('```')) {
@@ -45,7 +99,7 @@ function renderFormattedMessage(content) {
               }}
               className="hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <span>📋</span>
+              <IconCopy className="w-3 h-3 text-neutral-400" />
               <span>Copy</span>
             </button>
           </div>
@@ -103,10 +157,107 @@ function renderFormattedMessage(content) {
   });
 }
 
+function renderPeripheralIcon(type, name = '') {
+  const t = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+
+  if (t === 'mouse' || /mouse|cobra|deathadder|viper|g502|mx master|trackball|touchpad/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="6" y="3" width="12" height="18" rx="6" />
+        <line x1="12" y1="7" x2="12" y2="11" />
+      </svg>
+    );
+  }
+  if (t === 'keyboard' || /keyboard|keychron|k2|k3|logi k|blackwidow|huntsman/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <line x1="6" y1="9" x2="6" y2="9.01" />
+        <line x1="10" y1="9" x2="10" y2="9.01" />
+        <line x1="14" y1="9" x2="14" y2="9.01" />
+        <line x1="18" y1="9" x2="18" y2="9.01" />
+        <line x1="6" y1="13" x2="6" y2="13.01" />
+        <line x1="18" y1="13" x2="18" y2="13.01" />
+        <line x1="9" y1="14" x2="15" y2="14" />
+      </svg>
+    );
+  }
+  if (t === 'gamepad' || /gamepad|controller|dualsense|xbox|ranger|spinbot|switch/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="6" />
+        <line x1="6" y1="12" x2="10" y2="12" />
+        <line x1="8" y1="10" x2="8" y2="14" />
+        <circle cx="16" cy="11" r="1" fill="currentColor" />
+        <circle cx="18" cy="13" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (t === 'headphones' || /wh-|ch-|headphone|headset|sony|bose|jbl|over-ear/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+      </svg>
+    );
+  }
+  if (t === 'earbuds' || /buds|airpod|airdopes|ear|tws|immortal|neo|trüke/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 3C4.24 3 2 5.24 2 8c0 2.21 1.44 4.08 3.44 4.72l-.94 7.53C4.38 21.2 5.16 22 6.12 22h.76c.96 0 1.74-.8 1.62-1.75l-.94-7.53C9.56 12.08 11 10.21 11 8c0-2.76-2.24-5-5-5zm10 0c-2.76 0-5 2.24-5 5 0 2.21 1.44 4.08 3.44 4.72l-.94 7.53c-.12.95.66 1.75 1.62 1.75h.76c.96 0 1.74-.8 1.62-1.75l-.94-7.53C19.56 12.08 21 10.21 21 8c0-2.76-2.24-5-5-5z" />
+      </svg>
+    );
+  }
+  if (t === 'speaker' || /speaker|soundbar|soundcore|audio/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+      </svg>
+    );
+  }
+  if (t === 'display' || /display|monitor|screen|projector|tv/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    );
+  }
+  if (t === 'phone' || /phone|iphone|galaxy|pixel|ipad|tablet|android/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="3" />
+        <line x1="12" y1="18" x2="12" y2="18.01" />
+      </svg>
+    );
+  }
+  if (t === 'usb' || /usb|flash|drive|storage|dongle/i.test(n)) {
+    return (
+      <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2v10m0 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+        <path d="M9 7l3-3 3 3" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5" />
+    </svg>
+  );
+}
+
 export default function DynamicIsland({
   theme,
   setThemeKey,
   themes,
+  companionName = 'Bio-Core',
+  companionDesign = 'orbital',
+  language = 'en',
+  displaySettings = DEFAULT_ISLAND_DISPLAY,
+  onRequestExpand,
   eyeTracking,
   expression,
   setExpression,
@@ -121,8 +272,123 @@ export default function DynamicIsland({
   onDismissGreeting,
   onTriggerGreeting,
   onDragOutChange,
+  onFoldIn,
+  isSnippingMode: isSnippingModeProp = false,
+  onSnippingModeChange,
+  wakeStage = 'done',
+  userName = 'Creator',
 }) {
-  const [activeTab, setActiveTab] = useState('ai');
+  const t = getTranslations(language);
+  const displaySettingsRef = useRef(displaySettings);
+  displaySettingsRef.current = displaySettings;
+  const [activeTab, setActiveTab] = useState('home');
+  const [updateReady, setUpdateReady] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState({ status: 'idle', version: null, percent: 0 });
+  const updateResetTimerRef = useRef(null);
+
+  // Internet Connectivity Detection (Updates only display when online)
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI?.onUpdateStatus) {
+      const unsub = window.electronAPI.onUpdateStatus((status) => {
+        if (!status) return;
+        setUpdateStatus(status);
+        if (status.status === 'ready') {
+          setUpdateReady(status.version || 'new');
+        }
+        if (status.status === 'available' || status.status === 'ready') {
+          setIsUpdateDismissed(false);
+        }
+        if (status.status === 'up-to-date' || status.status === 'error') {
+          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+          updateResetTimerRef.current = setTimeout(() => {
+            setUpdateStatus((prev) => (prev.status === status.status ? { status: 'idle', version: null, percent: 0 } : prev));
+          }, 3500);
+        }
+      });
+      return () => {
+        unsub?.();
+        if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+      };
+    }
+  }, []);
+
+  const isUpdateAlertMode = Boolean(
+    !isExpanded &&
+    isOnline &&
+    !isUpdateDismissed &&
+    (updateStatus.status === 'available' || updateStatus.status === 'downloading' || updateStatus.status === 'ready' || updateReady)
+  );
+
+  const handleInstallUpdateClick = (e) => {
+    e?.stopPropagation();
+    if (!isOnline) {
+      alert('Active internet connection required to download updates.');
+      return;
+    }
+    setIsInstallingUpdate(true);
+    if (updateStatus.status === 'ready' || updateReady) {
+      closeAllDropdowns();
+      window.electronAPI?.restartAndInstallUpdate?.();
+      return;
+    }
+    if (window.electronAPI?.simulateDownloadAndInstall && updateStatus.status === 'available') {
+      window.electronAPI.simulateDownloadAndInstall(updateStatus.version || '1.0.1');
+    }
+    if (window.electronAPI?.downloadAndInstallUpdate) {
+      window.electronAPI.downloadAndInstallUpdate();
+    } else if (window.electronAPI?.restartAndInstallUpdate) {
+      window.electronAPI.restartAndInstallUpdate();
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    if (updateStatus.status === 'ready' || updateReady) {
+      closeAllDropdowns();
+      window.electronAPI?.restartAndInstallUpdate?.();
+      return;
+    }
+    if (updateStatus.status === 'checking' || updateStatus.status === 'downloading') return;
+    setUpdateStatus({ status: 'checking', version: null, percent: 0 });
+    if (window.electronAPI?.checkForUpdates) {
+      try {
+        const res = await window.electronAPI.checkForUpdates();
+        if (res?.status === 'dev-mode') {
+          setUpdateStatus({ status: 'dev-mode', version: null, percent: 0 });
+          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+          updateResetTimerRef.current = setTimeout(() => {
+            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+          }, 3500);
+        } else if (res?.status === 'error') {
+          setUpdateStatus({ status: 'error', version: null, percent: 0 });
+          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+          updateResetTimerRef.current = setTimeout(() => {
+            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+          }, 3500);
+        }
+      } catch (_) {
+        setUpdateStatus({ status: 'error', version: null, percent: 0 });
+        if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+        updateResetTimerRef.current = setTimeout(() => {
+          setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+        }, 3500);
+      }
+    }
+  };
 
   // Real System Hardware & Network Telemetry State
   const [telemetry, setTelemetry] = useState({
@@ -157,15 +423,7 @@ export default function DynamicIsland({
     bluetooth: {
       enabled: true,
       adapter: 'MediaTek Bluetooth Adapter',
-      devices: [
-        { id: 1, name: 'WH-CH520', type: 'headphones', connected: false, status: 'Paired' },
-        { id: 2, name: 'Airdopes 311 Pro', type: 'headphones', connected: false, status: 'Paired' },
-        { id: 3, name: "Smokin' Buds", type: 'headphones', connected: false, status: 'Paired' },
-        { id: 4, name: 'SpinBot Ranger HX300', type: 'gamepad', connected: false, status: 'Paired' },
-        { id: 5, name: 'Immortal 100', type: 'headphones', connected: false, status: 'Paired' },
-        { id: 6, name: 'trüke BTG Neo', type: 'headphones', connected: false, status: 'Paired' },
-        { id: 7, name: 'trüke Buds Q1', type: 'headphones', connected: false, status: 'Paired' },
-      ],
+      devices: [],
     },
     system: {
       uptimeHours: 13,
@@ -177,21 +435,11 @@ export default function DynamicIsland({
 
   // WiFi & Bluetooth State (populated from real hardware)
   const [isWifiOn, setIsWifiOn] = useState(true);
-  const [currentWifi, setCurrentWifi] = useState('GJBC-MCA(LAPTOP-ONLY)');
-  const [wifiNetworks, setWifiNetworks] = useState([
-    { name: 'GJBC-MCA(LAPTOP-ONLY)', connected: true, signal: 4, secure: true, speed: '286.8 Mbps' },
-  ]);
+  const [currentWifi, setCurrentWifi] = useState('');
+  const [wifiNetworks, setWifiNetworks] = useState([]);
 
   const [isBluetoothOn, setIsBluetoothOn] = useState(true);
-  const [btDevices, setBtDevices] = useState([
-    { id: 1, name: 'WH-CH520', type: 'headphones', connected: false, status: 'Paired' },
-    { id: 2, name: 'Airdopes 311 Pro', type: 'headphones', connected: false, status: 'Paired' },
-    { id: 3, name: "Smokin' Buds", type: 'headphones', connected: false, status: 'Paired' },
-    { id: 4, name: 'SpinBot Ranger HX300', type: 'gamepad', connected: false, status: 'Paired' },
-    { id: 5, name: 'Immortal 100', type: 'headphones', connected: false, status: 'Paired' },
-    { id: 6, name: 'trüke BTG Neo', type: 'headphones', connected: false, status: 'Paired' },
-    { id: 7, name: 'trüke Buds Q1', type: 'headphones', connected: false, status: 'Paired' },
-  ]);
+  const [btDevices, setBtDevices] = useState([]);
 
   // ========================================================
   // DYNAMIC MULTI-INDICATOR SYSTEM (Max 3 stacked, Music exception)
@@ -200,12 +448,25 @@ export default function DynamicIsland({
   const [isMicActive, setIsMicActive] = useState(false);
   const [isCamActive, setIsCamActive] = useState(false);
   const [isAirplaneMode, setIsAirplaneMode] = useState(false);
-  const [isBtIndicatorActive, setIsBtIndicatorActive] = useState(false);
   const [isSimulatedLowBattery, setIsSimulatedLowBattery] = useState(false);
   const [isSimulatedCharging, setIsSimulatedCharging] = useState(null);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
-  const btTimerRef = useRef(null);
   const prevBtConnectedRef = useRef(new Set());
+  const isInitialBtScanRef = useRef(true);
+
+  // Live Peripheral / Hardware Device Connection Alert State
+  const [activeDeviceAlert, setActiveDeviceAlert] = useState(null); // { name: string, type: string, battery?: number | null }
+  const deviceAlertTimerRef = useRef(null);
+
+  const triggerDeviceConnectedAlert = (device) => {
+    if (!device || !device.name) return;
+    setActiveDeviceAlert(device);
+    if (deviceAlertTimerRef.current) clearTimeout(deviceAlertTimerRef.current);
+    deviceAlertTimerRef.current = setTimeout(() => {
+      setActiveDeviceAlert(null);
+      deviceAlertTimerRef.current = null;
+    }, 4500); // Shown for 4.5 seconds, then smoothly returns to normal
+  };
 
   // Live Hardware Master Volume & Screen Brightness HUD State
   const [activeHud, setActiveHud] = useState(null); // { type: 'volume' | 'brightness', value: number, muted?: boolean }
@@ -234,7 +495,6 @@ export default function DynamicIsland({
 
   const [indicatorTimestamps, setIndicatorTimestamps] = useState({
     music: Date.now(),
-    bluetooth: 0,
     camera: 0,
     mic: 0,
     airplane: 0,
@@ -243,15 +503,6 @@ export default function DynamicIsland({
     focus: 0,
     mail: 0,
   });
-
-  const triggerBluetoothIndicator = () => {
-    setIsBtIndicatorActive(true);
-    setIndicatorTimestamps((prev) => ({ ...prev, bluetooth: Date.now() }));
-    if (btTimerRef.current) clearTimeout(btTimerRef.current);
-    btTimerRef.current = setTimeout(() => {
-      setIsBtIndicatorActive(false);
-    }, 5000); // Blinks for 5 seconds and smoothly vanishes
-  };
 
   const toggleCameraIndicator = () => {
     setIsCamActive((prev) => {
@@ -269,29 +520,108 @@ export default function DynamicIsland({
     });
   };
 
-  const toggleAirplaneMode = () => {
-    setIsAirplaneMode((prev) => {
-      const next = !prev;
-      if (next) setIndicatorTimestamps((t) => ({ ...t, airplane: Date.now() }));
-      return next;
-    });
+  const [isRadioBusy, setIsRadioBusy] = useState(false);
+
+  // Sync actual Windows Wi-Fi & Bluetooth radio states on mount
+  useEffect(() => {
+    if (window.electronAPI?.getRadioState) {
+      window.electronAPI.getRadioState().then((res) => {
+        if (res?.success) {
+          setIsWifiOn(Boolean(res.wifiOn));
+          setIsBluetoothOn(Boolean(res.bluetoothOn));
+          setIsAirplaneMode(!res.wifiOn && !res.bluetoothOn);
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleToggleWifi = async () => {
+    if (isRadioBusy) return;
+    const next = !isWifiOn;
+    setIsWifiOn(next);
+    if (next) setIsAirplaneMode(false);
+    setIsRadioBusy(true);
+    try {
+      const res = await window.electronAPI?.setRadioState?.({ target: 'wifi', state: next ? 'on' : 'off' });
+      if (res?.success) {
+        setIsWifiOn(Boolean(res.wifiOn));
+        setIsBluetoothOn(Boolean(res.bluetoothOn));
+        setIsAirplaneMode(!res.wifiOn && !res.bluetoothOn);
+      }
+    } finally {
+      setIsRadioBusy(false);
+    }
   };
 
-  const toggleLowBatterySim = () => {
-    setIsSimulatedLowBattery((prev) => {
-      const next = !prev;
-      if (next) setIndicatorTimestamps((t) => ({ ...t, battery_low: Date.now() }));
-      return next;
-    });
+  const handleToggleBluetooth = async () => {
+    if (isRadioBusy) return;
+    const next = !isBluetoothOn;
+    setIsBluetoothOn(next);
+    if (next) setIsAirplaneMode(false);
+    setIsRadioBusy(true);
+    try {
+      const res = await window.electronAPI?.setRadioState?.({ target: 'bluetooth', state: next ? 'on' : 'off' });
+      if (res?.success) {
+        setIsWifiOn(Boolean(res.wifiOn));
+        setIsBluetoothOn(Boolean(res.bluetoothOn));
+        setIsAirplaneMode(!res.wifiOn && !res.bluetoothOn);
+      }
+    } finally {
+      setIsRadioBusy(false);
+    }
   };
 
-  const toggleChargingSim = () => {
-    setIsSimulatedCharging((prev) => {
-      const current = prev !== null ? prev : Boolean(telemetry.battery?.isCharging);
-      const next = !current;
-      if (next) setIndicatorTimestamps((t) => ({ ...t, battery_charging: Date.now() }));
-      return next;
-    });
+  const toggleAirplaneMode = async () => {
+    if (isRadioBusy) return;
+    const nextAirplane = !isAirplaneMode;
+    setIsAirplaneMode(nextAirplane);
+    if (nextAirplane) {
+      setIndicatorTimestamps((t) => ({ ...t, airplane: Date.now() }));
+      setIsWifiOn(false);
+      setIsBluetoothOn(false);
+    } else {
+      setIsWifiOn(true);
+      setIsBluetoothOn(true);
+    }
+    setIsRadioBusy(true);
+    try {
+      const res = await window.electronAPI?.setRadioState?.({
+        target: 'all',
+        state: nextAirplane ? 'off' : 'on',
+      });
+      if (res?.success) {
+        setIsWifiOn(Boolean(res.wifiOn));
+        setIsBluetoothOn(Boolean(res.bluetoothOn));
+        setIsAirplaneMode(!res.wifiOn && !res.bluetoothOn);
+      }
+    } finally {
+      setIsRadioBusy(false);
+    }
+  };
+
+  const handleConnectWifi = async (ssid) => {
+    if (!ssid || isRadioBusy) return;
+    setIsRadioBusy(true);
+    try {
+      const res = await window.electronAPI?.connectWifiNetwork?.(ssid);
+      if (res?.success) {
+        setCurrentWifi(ssid);
+        setIsWifiOn(true);
+      }
+    } finally {
+      setIsRadioBusy(false);
+    }
+  };
+
+  const handleDisconnectWifi = async () => {
+    if (isRadioBusy) return;
+    setIsRadioBusy(true);
+    try {
+      await window.electronAPI?.disconnectWifi?.();
+      setCurrentWifi('Disconnected');
+    } finally {
+      setIsRadioBusy(false);
+    }
   };
 
   // Hook into real hardware telemetry from Electron
@@ -320,12 +650,22 @@ export default function DynamicIsland({
             setIsBluetoothOn(data.bluetooth.enabled);
             if (data.bluetooth.devices?.length > 0) {
               setBtDevices(data.bluetooth.devices);
-              const connectedNow = data.bluetooth.devices.filter((d) => d.connected).map((d) => d.name);
-              const newlyConnected = connectedNow.some((name) => !prevBtConnectedRef.current.has(name));
-              if (newlyConnected) {
-                triggerBluetoothIndicator();
+              const connectedNow = data.bluetooth.devices.filter((d) => d.connected);
+              if (!isInitialBtScanRef.current) {
+                for (const dev of connectedNow) {
+                  if (!prevBtConnectedRef.current.has(dev.name)) {
+                    triggerDeviceConnectedAlert({
+                      name: dev.name,
+                      type: dev.type || 'bluetooth',
+                      battery: dev.battery != null ? dev.battery : (dev.type === 'headphones' ? 85 : dev.type === 'mouse' ? 90 : dev.type === 'keyboard' ? 75 : 80),
+                    });
+                    break;
+                  }
+                }
+              } else {
+                isInitialBtScanRef.current = false;
               }
-              prevBtConnectedRef.current = new Set(connectedNow);
+              prevBtConnectedRef.current = new Set(connectedNow.map((d) => d.name));
             }
           }
           if (data.privacy) {
@@ -350,8 +690,18 @@ export default function DynamicIsland({
       }).catch(console.error);
     }
 
+    let devCleanup = null;
+    if (window.electronAPI?.onDeviceConnected) {
+      devCleanup = window.electronAPI.onDeviceConnected((dev) => {
+        if (dev && dev.name) {
+          triggerDeviceConnectedAlert(dev);
+        }
+      });
+    }
+
+    let cleanup = null;
     if (window.electronAPI?.onTelemetryUpdate) {
-      const cleanup = window.electronAPI.onTelemetryUpdate((data) => {
+      cleanup = window.electronAPI.onTelemetryUpdate((data) => {
         if (data) {
           setTelemetry((prev) => ({ ...prev, ...data }));
           if (data.wifi?.ssid) {
@@ -359,12 +709,6 @@ export default function DynamicIsland({
           }
           if (data.bluetooth?.devices?.length > 0) {
             setBtDevices(data.bluetooth.devices);
-            const connectedNow = data.bluetooth.devices.filter((d) => d.connected).map((d) => d.name);
-            const newlyConnected = connectedNow.some((name) => !prevBtConnectedRef.current.has(name));
-            if (newlyConnected) {
-              triggerBluetoothIndicator();
-            }
-            prevBtConnectedRef.current = new Set(connectedNow);
           }
           if (data.privacy) {
             if (typeof data.privacy.camInUse === 'boolean') {
@@ -386,30 +730,52 @@ export default function DynamicIsland({
           }
         }
       });
-      return () => cleanup?.();
     }
+
+    return () => {
+      cleanup?.();
+      devCleanup?.();
+    };
   }, []);
 
-  // Connectivity Dropdown State ('wifi' | 'bluetooth' | null)
+  // Connectivity Dropdown State ('wifi' | 'bluetooth' | null) & Options Menu State (•••)
   const [activeDropdownTab, setActiveDropdownTab] = useState('wifi');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown on click outside
+  const closeAllDropdowns = () => {
+    setIsDropdownOpen(false);
+    setIsOptionsMenuOpen(false);
+    onDropdownChange?.(false);
+  };
+
+  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
+        setIsOptionsMenuOpen(false);
         onDropdownChange?.(false);
       }
     };
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isOptionsMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isDropdownOpen, onDropdownChange]);
+  }, [isDropdownOpen, isOptionsMenuOpen, onDropdownChange]);
+
+  // Reset menus if island collapses
+  useEffect(() => {
+    if (!isHovered && !isPinned) {
+      setIsDropdownOpen(false);
+      setIsOptionsMenuOpen(false);
+      onDropdownChange?.(false);
+    }
+  }, [isHovered, isPinned, onDropdownChange]);
 
   const toggleDropdown = (tab) => {
+    setIsOptionsMenuOpen(false);
     if (isDropdownOpen && activeDropdownTab === tab) {
       setIsDropdownOpen(false);
       onDropdownChange?.(false);
@@ -418,6 +784,15 @@ export default function DynamicIsland({
       setIsDropdownOpen(true);
       onDropdownChange?.(true);
     }
+  };
+
+  const toggleOptionsMenu = () => {
+    setIsDropdownOpen(false);
+    setIsOptionsMenuOpen((prev) => {
+      const next = !prev;
+      onDropdownChange?.(next);
+      return next;
+    });
   };
 
   // Live Clock & Date
@@ -473,6 +848,26 @@ export default function DynamicIsland({
   });
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
+
+  // Spotify Song Intro State: Show song name for 1.8-2s on track start/change, then lyrics show up
+  const [showSongIntro, setShowSongIntro] = useState(false);
+  const songIntroTimerRef = useRef(null);
+  const prevTrackTitleRef = useRef('');
+
+  useEffect(() => {
+    if (isPlaying && trackData.title && trackData.title !== prevTrackTitleRef.current) {
+      prevTrackTitleRef.current = trackData.title;
+      setShowSongIntro(true);
+      if (songIntroTimerRef.current) clearTimeout(songIntroTimerRef.current);
+      songIntroTimerRef.current = setTimeout(() => {
+        setShowSongIntro(false);
+        songIntroTimerRef.current = null;
+      }, 2000); // Shown for 2 seconds, then rolling lyrics take over!
+    } else if (!isPlaying) {
+      setShowSongIntro(false);
+      prevTrackTitleRef.current = '';
+    }
+  }, [isPlaying, trackData.title]);
 
   // Synchronized timestamped lyrics state
   const [lyrics, setLyrics] = useState([]);
@@ -579,7 +974,101 @@ export default function DynamicIsland({
 
   const rawLyricLine = activeLyricIndex >= 0 ? lyrics[activeLyricIndex].text : '';
   const currentLyricLine = hasDevanagari(rawLyricLine) ? devanagariToHinglish(rawLyricLine) : rawLyricLine;
+  const rawNextLyricLine = activeLyricIndex >= 0 && lyrics[activeLyricIndex + 1] ? lyrics[activeLyricIndex + 1].text : '';
+  const nextLyricLine = hasDevanagari(rawNextLyricLine) ? devanagariToHinglish(rawNextLyricLine) : rawNextLyricLine;
   const hasLyrics = Boolean(lyrics && lyrics.length > 0);
+
+  // Word-by-word karaoke progress calculation for the active synced lyric line
+  const renderLyricContent = (lineText, compact = false, multiline = false) => {
+    if (!lineText) return 'Instrumental';
+    if (!displaySettings.wordByWord || activeLyricIndex < 0 || !lyrics[activeLyricIndex]) {
+      return lineText;
+    }
+
+    const words = lineText.split(/\s+/).filter(Boolean);
+    const glowHex = ambientPalette.hex || theme.accent || '#34d399';
+    if (words.length <= 1) {
+      return (
+        <span
+          className="text-white font-bold transition-all duration-150"
+          style={{ textShadow: `0 0 10px ${glowHex}` }}
+        >
+          {lineText}
+        </span>
+      );
+    }
+
+    const lineStart = lyrics[activeLyricIndex].time || 0;
+    const nextLineTime = lyrics[activeLyricIndex + 1]?.time;
+    const charCount = lineText.replace(/\s+/g, '').length;
+    // Natural vocal cadence estimate (handles fast & melodic lines without dragging across long instrumental gaps)
+    const vocalEstimate = Math.max(1.15, words.length * 0.27 + charCount * 0.034);
+    const rawGap =
+      typeof nextLineTime === 'number' && nextLineTime > lineStart + 0.3
+        ? nextLineTime - lineStart
+        : vocalEstimate;
+
+    // Trim trailing breath/instrumental pause (~14%) and cap runaway gaps between verses
+    const singDuration = Math.max(
+      0.85,
+      Math.min(rawGap * 0.86, Math.max(vocalEstimate, rawGap * 0.65))
+    );
+
+    // Subtle +0.16s vocal attack lead so each word illuminates right on the sung beat
+    const elapsed = Math.max(0, trackPosition + 0.16 - lineStart);
+    const lineProgress = Math.max(0, Math.min(1, elapsed / singDuration));
+
+    // Weight each word proportionally by character count + slight syllable/pause weight
+    const weights = words.map((w) => {
+      const cleanLen = w.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '').length;
+      const pauseBoost = /[,;.!?]$/.test(w) ? 1.5 : 0;
+      return Math.max(2, cleanLen + 1.1 + pauseBoost);
+    });
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let acc = 0;
+
+    return (
+      <span
+        className={
+          multiline
+            ? 'inline-flex flex-wrap items-baseline gap-x-[5px] gap-y-[1px]'
+            : 'inline-flex items-baseline gap-[3.5px] whitespace-nowrap'
+        }
+      >
+        {words.map((word, idx) => {
+          const startFrac = acc / totalWeight;
+          acc += weights[idx];
+          const endFrac = acc / totalWeight;
+          const isSung = lineProgress >= endFrac;
+          const isCurrent = lineProgress >= startFrac && lineProgress < endFrac;
+
+          return (
+            <span
+              key={`${activeLyricIndex}-${idx}`}
+              className={`inline-block transition-all duration-150 ${
+                isCurrent
+                  ? 'text-white font-bold'
+                  : isSung
+                  ? 'text-white font-bold'
+                  : multiline
+                  ? 'text-white/35 font-bold'
+                  : compact
+                  ? 'text-white/38 font-normal'
+                  : 'text-white/35 font-normal'
+              }`}
+              style={
+                isCurrent
+                  ? { textShadow: `0 0 12px ${glowHex}aa` }
+                  : undefined
+              }
+            >
+              {word}
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
 
   // Extract dominant ambient lighting color whenever artwork changes
   useEffect(() => {
@@ -590,22 +1079,30 @@ export default function DynamicIsland({
     }
   }, [trackData?.artwork]);
 
-  // Real-time track progress ticker while Spotify is actively playing
+  // Real-time wall-clock track progress ticker (drift-free 100ms karaoke resolution when word-by-word is active)
   useEffect(() => {
     if (!isPlaying) return;
 
-    // Smooth 1s ticker running so timeline progresses smoothly between GSMTC ticks
+    const highPrecision = Boolean(displaySettings.wordByWord && displaySettings.showLyrics !== false && hasLyrics);
+    const tickMs = highPrecision ? 100 : 1000;
+    let lastTickAt = Date.now();
+
     const interval = setInterval(() => {
+      const now = Date.now();
+      const deltaSec = Math.min(1.5, Math.max(0.05, (now - lastTickAt) / 1000));
+      lastTickAt = now;
       setTrackPosition((prev) => {
-        if (prev >= (trackData.duration || 200)) {
-          return isRepeat ? 0 : prev;
+        const next = prev + deltaSec;
+        const maxDur = trackData.duration || 200;
+        if (next >= maxDur) {
+          return isRepeat ? 0 : maxDur;
         }
-        return prev + 1;
+        return next;
       });
-    }, 1000);
+    }, tickMs);
 
     return () => clearInterval(interval);
-  }, [isPlaying, trackData.duration, isRepeat]);
+  }, [isPlaying, trackData.duration, isRepeat, displaySettings.wordByWord, displaySettings.showLyrics, hasLyrics]);
 
   // Sync real-time media from Spotify / Windows GSMTC
   useEffect(() => {
@@ -706,6 +1203,11 @@ export default function DynamicIsland({
             ? { volume: data.value, muted: Boolean(data.muted) }
             : { brightness: data.value }),
         }));
+
+        // Respect Island Display "Volume bar" preference
+        if (data.type === 'volume' && displaySettingsRef.current?.showVolumeBar === false) {
+          return;
+        }
 
         // Morph Island into responsive Volume / Brightness HUD bar
         setActiveHud({
@@ -997,6 +1499,66 @@ export default function DynamicIsland({
     return () => clearInterval(interval);
   }, [isFocusRunning, focusPhase, focusCycle, focusPreset, isChimeEnabled]);
 
+  // Broadcast and persist focus state to localStorage for Eyeland Hub
+  useEffect(() => {
+    try {
+      localStorage.setItem('eyeland_focus_state', JSON.stringify({
+        isFocusRunning,
+        focusPhase,
+        focusSecondsLeft,
+        focusTotalSeconds,
+        completedSessionsToday,
+        timestamp: Date.now()
+      }));
+    } catch (_) {}
+  }, [isFocusRunning, focusPhase, focusSecondsLeft, focusTotalSeconds, completedSessionsToday]);
+
+  // Listen for Hub actions directly inside DynamicIsland
+  useEffect(() => {
+    if (window.electronAPI?.onHubAction) {
+      const unsub = window.electronAPI.onHubAction((action) => {
+        if (!action) return;
+        if (action.type === 'START_FOCUS') {
+          setIsFocusRunning(true);
+          playFocusChime('work');
+        } else if (action.type === 'STOP_FOCUS') {
+          setIsFocusRunning(false);
+        } else if (action.type === 'NAVIGATE_TAB' && action.tab) {
+          setActiveTab(action.tab);
+          setIsExpanded(true);
+        } else if (action.type === 'TRIGGER_SNIP') {
+          handleTriggerSnip(action.toolName || 'explain');
+        } else if (action.type === 'CLIPBOARD_CLEARED') {
+          setClipboardItems([]);
+          setCopiedItemId(null);
+          try {
+            localStorage.setItem('eyeland_clipboard_history', '[]');
+            localStorage.removeItem('eyeland_clipboard_history');
+          } catch (_) {}
+        }
+      });
+      return unsub;
+    }
+  }, []);
+
+  // Listen for Island actions directly inside DynamicIsland
+  useEffect(() => {
+    if (window.electronAPI?.onIslandAction) {
+      const unsub = window.electronAPI.onIslandAction((action) => {
+        if (!action) return;
+        if (action.type === 'CLIPBOARD_CLEARED') {
+          setClipboardItems([]);
+          setCopiedItemId(null);
+          try {
+            localStorage.setItem('eyeland_clipboard_history', '[]');
+            localStorage.removeItem('eyeland_clipboard_history');
+          } catch (_) {}
+        }
+      });
+      return unsub;
+    }
+  }, []);
+
   // Clipboard state (persisted, max 10 items, no dummy items)
   const [clipboardItems, setClipboardItems] = useState(() => {
     try {
@@ -1127,13 +1689,20 @@ export default function DynamicIsland({
     });
   };
 
-  // Clear all clipboard items
+  // Clear all clipboard items AND wipe Windows clipboard memory so cleared items never return
   const clearAllClipboardItems = (e) => {
     e?.stopPropagation();
     setClipboardItems([]);
+    setCopiedItemId(null);
     try {
+      localStorage.setItem('eyeland_clipboard_history', '[]');
       localStorage.removeItem('eyeland_clipboard_history');
     } catch {}
+    if (window.electronAPI?.clearClipboard) {
+      window.electronAPI.clearClipboard().catch(() => {});
+    } else if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText('').catch(() => {});
+    }
   };
 
   // Quick Scratchpad & Notes state (persisted across restarts, multi-slot, no dummy text)
@@ -1315,7 +1884,7 @@ export default function DynamicIsland({
   const [screenSnapshot, setScreenSnapshot] = useState(null);
   const [aiResponseCard, setAiResponseCard] = useState(null);
   const [isDictating, setIsDictating] = useState(false);
-  const [modelStatus, setModelStatus] = useState('Gemini 2.5 Flash Vision');
+  const [modelStatus, setModelStatus] = useState('Gemini Flash Vision');
 
   // AI Tools & Neural Suite State (+ Crosshair Snip)
   const [activeFeatureTool, setActiveFeatureTool] = useState(null); // 'explain' | 'polish' | 'translate' | 'summarize' | 'code' | 'snip' | null
@@ -1329,6 +1898,58 @@ export default function DynamicIsland({
   const [polishTone, setPolishTone] = useState('professional');
   const [featureCopied, setFeatureCopied] = useState(false);
   const [featureSavedNote, setFeatureSavedNote] = useState(false);
+  const [isSnippingMode, setIsSnippingMode] = useState(false);
+  const isSnippingActive = isSnippingMode || isSnippingModeProp;
+  const isWakingUp = wakeStage !== 'done';
+  const isExpanded = (
+    wakeStage === 'full' ||
+    ((isHovered || isPinned || isGreetingActive) && wakeStage !== 'seed' && wakeStage !== 'off' && wakeStage !== 'greet')
+  ) && !isSnippingActive;
+
+  // Live Telemetry Smooth Count-Up Animation (Option A: 0% -> Live values over 1.3s)
+  const [telemetryAnimProgress, setTelemetryAnimProgress] = useState(wakeStage === 'done' ? 1 : 0);
+
+  useEffect(() => {
+    if (wakeStage === 'full') {
+      setTelemetryAnimProgress(0);
+      const t0 = performance.now();
+      const duration = 1300;
+      let animId = null;
+
+      const animate = (now) => {
+        const elapsed = now - t0;
+        const progress = Math.min(1, elapsed / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setTelemetryAnimProgress(eased);
+
+        if (progress < 1) {
+          animId = requestAnimationFrame(animate);
+        } else {
+          setTelemetryAnimProgress(1);
+        }
+      };
+
+      animId = requestAnimationFrame(animate);
+      return () => {
+        if (animId) cancelAnimationFrame(animId);
+      };
+    } else if (wakeStage === 'done') {
+      setTelemetryAnimProgress(1);
+    }
+  }, [wakeStage]);
+
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 5 || hour >= 22) return 'Hello, night owl';
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  };
+
+  // AI Thinking & Result Ready Alert Indicators (for Collapsed Island)
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [isResultReadyAlert, setIsResultReadyAlert] = useState(false);
+  const resultReadyTimerRef = useRef(null);
 
   // Gemini API Key & Real LLM Integration State
   const [hasGeminiKey, setHasGeminiKey] = useState(false);
@@ -1375,10 +1996,10 @@ export default function DynamicIsland({
       }
       if (clean) {
         localStorage.setItem('eyeland_gemini_api_key', clean);
-        setKeySaveMessage('✓ Custom Gemini key connected!');
+        setKeySaveMessage('Custom Gemini key connected!');
       } else {
         localStorage.removeItem('eyeland_gemini_api_key');
-        setKeySaveMessage('✓ Using built-in default model!');
+        setKeySaveMessage('Using built-in default model!');
       }
       await refreshAiStatus();
       setTimeout(() => {
@@ -1397,7 +2018,7 @@ export default function DynamicIsland({
       }
       localStorage.removeItem('eyeland_gemini_api_key');
       setApiKeyInput('');
-      setKeySaveMessage('✓ Reverted to built-in default model!');
+      setKeySaveMessage('Reverted to built-in default model!');
       await refreshAiStatus();
       setTimeout(() => {
         setKeySaveMessage('');
@@ -1446,7 +2067,7 @@ export default function DynamicIsland({
       clearTimeout(rejoiceTimerRef.current);
     }
     setExpression('rejoice');
-    setBuddyQuote('"Loving the head pats! *purrs in 60fps* ❤️"');
+    setBuddyQuote('"Loving the head pats! *purrs in 60fps*"');
 
     rejoiceTimerRef.current = setTimeout(() => {
       setExpression('neutral');
@@ -1677,18 +2298,23 @@ export default function DynamicIsland({
   const handleTriggerSnip = async (toolName = 'explain') => {
     setActiveTab('features');
     setActiveFeatureTool(toolName);
-    setFeatureLoading(true);
+    setIsSnippingMode(true);
+    onSnippingModeChange?.(true);
     setExpression('scan');
     if (window.electronAPI?.startSnipping) {
       try {
         await window.electronAPI.startSnipping(toolName);
       } catch (err) {
         console.error('startSnipping error:', err);
+        setIsSnippingMode(false);
+        onSnippingModeChange?.(false);
         setFeatureLoading(false);
         setExpression('neutral');
       }
     } else {
       setTimeout(() => {
+        setIsSnippingMode(false);
+        onSnippingModeChange?.(false);
         handleExecuteFeature(toolName, {
           sourceType: 'snip',
           text: 'Eyeland ambient desktop bezel companion with zero gap docking and neural multimodal vision.',
@@ -1696,6 +2322,15 @@ export default function DynamicIsland({
         });
       }, 700);
     }
+  };
+
+  const handleSelectTool = (toolName) => {
+    setActiveTab('features');
+    setActiveFeatureTool(toolName);
+    setFeatureResult(null);
+    setFeatureInputText('');
+    setFeatureCropPreview(null);
+    handleTriggerSnip(toolName);
   };
 
   const handleTriggerFromClipboard = async (toolName = 'explain') => {
@@ -1734,7 +2369,8 @@ export default function DynamicIsland({
     setActiveTab('features');
     setActiveFeatureTool(tool);
     setFeatureLoading(true);
-    setExpression('scan');
+    setIsAiThinking(true);
+    setExpression('thinking');
 
     const srcType = options.sourceType || featureSourceType || 'clipboard';
     setFeatureSourceType(srcType);
@@ -1758,7 +2394,7 @@ export default function DynamicIsland({
         });
 
         setFeatureLoading(false);
-        setExpression('neutral');
+        setIsAiThinking(false);
 
         if (res?.success && res.text) {
           const rawText = res.text;
@@ -1766,8 +2402,9 @@ export default function DynamicIsland({
           if (tool === 'explain') {
             setFeatureResult({
               tool: 'explain',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • EXPLAIN`,
-              title: 'Contextual Breakdown',
+              badge: 'EXPLAIN',
+              title: 'Explanation',
+              text: rawText,
               eli5: rawText,
               takeaways: [],
               sourceSnippet: textToProcess.slice(0, 130) + (textToProcess.length > 130 ? '...' : ''),
@@ -1776,8 +2413,9 @@ export default function DynamicIsland({
             const tone = options.tone || polishTone;
             setFeatureResult({
               tool: 'polish',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • ${tone.toUpperCase()}`,
-              title: 'Grammar & Tone Refinement',
+              badge: tone.toUpperCase(),
+              title: 'Polished',
+              text: rawText,
               original: textToProcess,
               polished: rawText,
               tone: tone,
@@ -1785,45 +2423,87 @@ export default function DynamicIsland({
           } else if (tool === 'translate') {
             setFeatureResult({
               tool: 'translate',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • TRANSLATE`,
-              title: `Translation Output`,
+              badge: (options.targetLang || targetTranslateLang).toUpperCase(),
+              title: 'Translation',
+              text: rawText,
               translatedText: rawText,
               targetLang: options.targetLang || targetTranslateLang,
             });
           } else if (tool === 'summarize') {
             setFeatureResult({
               tool: 'summarize',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • SUMMARY`,
-              title: 'Executive Digest',
+              badge: 'SUMMARY',
+              title: 'Summary',
+              text: rawText,
               tldr: rawText,
               actionTasks: [],
             });
           } else if (tool === 'code') {
             setFeatureResult({
               tool: 'code',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • DEBUGGER`,
-              title: 'Code Analysis & Fix',
+              badge: 'FIX CODE',
+              title: 'Code Fix',
+              text: rawText,
               fixedCode: rawText,
             });
           } else if (tool === 'snip') {
             setFeatureResult({
               tool: 'snip',
-              badge: `${res.model?.toUpperCase() || 'GEMINI'} • VISION`,
+              badge: 'VISION',
               title: 'Screen Analysis',
+              text: rawText,
               analysis: rawText,
             });
           }
+
+          // Persist to unified Eyeland Activity Log for the Eyeland Hub
+          try {
+            const existing = JSON.parse(localStorage.getItem('eyeland_activity_history') || '[]');
+            const newEntry = {
+              id: 'act_' + Date.now(),
+              type: 'ai_' + tool,
+              tool: tool,
+              title: tool === 'code' ? 'Fix Code' : tool === 'snip' ? 'Screen Analysis' : tool.charAt(0).toUpperCase() + tool.slice(1),
+              preview: rawText.slice(0, 160).trim(),
+              fullText: rawText,
+              timestamp: Date.now(),
+            };
+            const updated = [newEntry, ...existing.filter(e => e.id !== newEntry.id)].slice(0, 50);
+            localStorage.setItem('eyeland_activity_history', JSON.stringify(updated));
+            if (window.electronAPI?.sendIslandAction) {
+              window.electronAPI.sendIslandAction({ type: 'ACTIVITY_LOGGED', entry: newEntry });
+            }
+          } catch (_) {}
+
+          // Trigger 'Result ready' alert in collapsed island (auto-dismisses after 2-3s)
+          setIsResultReadyAlert(true);
+          setExpression('happy');
+
+          if (resultReadyTimerRef.current) clearTimeout(resultReadyTimerRef.current);
+          resultReadyTimerRef.current = setTimeout(() => {
+            setIsResultReadyAlert(false);
+            setExpression('neutral');
+            resultReadyTimerRef.current = null;
+          }, 3000);
+
           return;
         } else {
+          setIsResultReadyAlert(false);
+          setExpression('neutral');
           const isNoKey = res?.error?.includes('NO_API_KEY');
+          const isNetworkError = res?.error?.toLowerCase().includes('internet') || res?.error?.toLowerCase().includes('network') || res?.error?.toLowerCase().includes('fetch failed');
           setFeatureResult({
             tool: tool,
-            badge: isNoKey ? 'KEY REQUIRED' : 'ERROR',
-            title: isNoKey ? 'Gemini API Key Required' : 'Inference Notice',
+            badge: isNoKey ? 'KEY REQUIRED' : (isNetworkError ? 'OFFLINE' : 'NOTICE'),
+            title: isNoKey ? 'API Key Required' : (isNetworkError ? 'Network Disconnected' : 'Notice'),
+            text: isNoKey
+              ? 'Please configure your free Gemini API key in Hub Settings or set the GEMINI_API_KEY environment variable.'
+              : `${res?.error || 'Unknown error occurred'}`,
             eli5: isNoKey
-              ? 'Please configure your free Gemini API key to run real-time AI reasoning with Gemini. Click "Set Gemini API Key" above.'
-              : `Gemini Error: ${res?.error || 'Unknown error occurred'}`,
+              ? 'Please configure your free Gemini API key in Hub Settings or set the GEMINI_API_KEY environment variable.'
+              : `${res?.error || 'Unknown error occurred'}`,
             isKeyMissing: isNoKey,
+            isNetworkError: isNetworkError,
           });
           return;
         }
@@ -1831,12 +2511,16 @@ export default function DynamicIsland({
     } catch (err) {
       console.error('[handleExecuteFeature error]', err);
       setFeatureLoading(false);
+      setIsAiThinking(false);
+      setIsResultReadyAlert(false);
       setExpression('neutral');
+      const isNet = err.message?.toLowerCase().includes('fetch failed') || err.message?.toLowerCase().includes('network');
       setFeatureResult({
         tool: tool,
-        badge: 'ERROR',
-        title: 'Error Running Tool',
-        eli5: err.message || 'Failed to call Gemini model.',
+        badge: isNet ? 'OFFLINE' : 'ERROR',
+        title: isNet ? 'Network Disconnected' : 'Error Running Tool',
+        eli5: isNet ? 'Internet connection error. Please verify your internet or Wi-Fi connection and try again.' : (err.message || 'Failed to call Gemini model.'),
+        isNetworkError: isNet,
       });
     }
   };
@@ -1886,8 +2570,11 @@ export default function DynamicIsland({
   useEffect(() => {
     if (window.electronAPI?.onSnippedResult) {
       const cleanup = window.electronAPI.onSnippedResult((res) => {
+        setIsSnippingMode(false);
         if (res?.cancelled) {
           setFeatureLoading(false);
+          setIsAiThinking(false);
+          setIsResultReadyAlert(false);
           setExpression('neutral');
           return;
         }
@@ -1904,6 +2591,11 @@ export default function DynamicIsland({
           setActiveTab('features');
           const tool = res.toolName || activeFeatureTool || 'explain';
           setActiveFeatureTool(tool);
+
+          // Immediately enter AI Thinking state in collapsed island
+          setIsAiThinking(true);
+          setExpression('thinking');
+
           handleExecuteFeature(tool, {
             sourceType: 'snip',
             dataUrl: res.dataUrl,
@@ -1916,6 +2608,20 @@ export default function DynamicIsland({
       };
     }
   }, [activeFeatureTool, targetTranslateLang, polishTone]);
+
+  useEffect(() => {
+    if (window.electronAPI?.onSnipperStatus) {
+      const cleanup = window.electronAPI.onSnipperStatus((status) => {
+        setIsSnippingMode(Boolean(status?.active));
+        if (!status?.active) {
+          setExpression('neutral');
+        }
+      });
+      return () => {
+        if (typeof cleanup === 'function') cleanup();
+      };
+    }
+  }, []);
 
   // Backward compatibility aliases
   const handleExplain = () => handleTriggerSnip('explain');
@@ -2034,7 +2740,7 @@ export default function DynamicIsland({
             {
               id: assistantMsgId,
               role: 'assistant',
-              text: `⚠️ ${res?.error || 'Could not process request with Gemini.'}`,
+              text: res?.error || 'Could not process request with Gemini.',
               isError: true,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
@@ -2052,7 +2758,7 @@ export default function DynamicIsland({
         {
           id: assistantMsgId,
           role: 'assistant',
-          text: `⚠️ Error: ${err.message || 'Failed to process request.'}`,
+          text: `Error: ${err.message || 'Failed to process request.'}`,
           isError: true,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -2060,29 +2766,69 @@ export default function DynamicIsland({
     }
   };
 
-  const isExpanded = isHovered || isPinned || isGreetingActive;
-
   const formatTime = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
+    const total = Math.max(0, Math.floor(Number(sec) || 0));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isHudMode = !isExpanded && activeHud !== null;
-  const isMailAlertMode = !isExpanded && !isHudMode && activeMailAlert !== null;
-  const isLyricsMode = !isExpanded && !isHudMode && !isMailAlertMode && isPlaying && hasLyrics;
-  const isFocusModeCollapsed = !isExpanded && !isHudMode && !isMailAlertMode && isFocusRunning && !isLyricsMode;
+  const formatTrackClock = (sec) => {
+    const total = Math.max(0, Math.floor(Number(sec) || 0));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
-  // Dynamic Companion Eye Expression & Color for Focus Mode vs Idle
-  const activeEyeExpression = isFocusRunning 
+  const isHudMode = !isExpanded && activeHud !== null;
+  const isDeviceAlertMode = !isExpanded && !isHudMode && activeDeviceAlert !== null;
+  const isResultReadyMode = !isExpanded && !isHudMode && !isDeviceAlertMode && isResultReadyAlert;
+  const isMailAlertMode = !isExpanded && !isHudMode && !isDeviceAlertMode && !isResultReadyMode && activeMailAlert !== null;
+  const isLyricsMode = !isExpanded && !isHudMode && !isMailAlertMode && !isDeviceAlertMode && !isResultReadyMode && isPlaying && (displaySettings.showLyrics !== false) && (hasLyrics || showSongIntro);
+  const isFocusModeCollapsed = !isExpanded && !isHudMode && !isMailAlertMode && !isDeviceAlertMode && !isResultReadyMode && isFocusRunning && !isLyricsMode;
+
+  // Auto-dismiss 'Result ready' alert when user expands the island
+  useEffect(() => {
+    if (isExpanded && isResultReadyAlert) {
+      setIsResultReadyAlert(false);
+      if (resultReadyTimerRef.current) {
+        clearTimeout(resultReadyTimerRef.current);
+        resultReadyTimerRef.current = null;
+      }
+    }
+  }, [isExpanded, isResultReadyAlert]);
+
+  // Cleanup result ready timer on unmount
+  useEffect(() => {
+    return () => {
+      if (resultReadyTimerRef.current) {
+        clearTimeout(resultReadyTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Dynamic Companion Eye Expression & Color for Thinking vs Result Ready vs Focus vs Idle
+  const activeEyeExpression = isAiThinking
+    ? 'thinking'
+    : isResultReadyAlert
+    ? 'happy'
+    : isFocusRunning 
     ? (focusPhase === 'work' ? 'serious' : 'relaxed')
     : expression;
 
-  const activeEyeColor = isFocusRunning
+  const activeEyeColor = isAiThinking
+    ? '#f97316' // Warm flame orange during thinking
+    : isResultReadyAlert
+    ? '#4ade80' // Emerald green when result is ready
+    : isFocusRunning
     ? (focusPhase === 'work' ? '#f59e0b' : '#10b981')
     : theme.color;
 
-  const activeEyeShadow = isFocusRunning
+  const activeEyeShadow = isAiThinking
+    ? '0 0 16px #f97316, 0 0 32px rgba(249, 115, 22, 0.75)'
+    : isResultReadyAlert
+    ? '0 0 16px #4ade80, 0 0 28px rgba(74, 222, 128, 0.6)'
+    : isFocusRunning
     ? (focusPhase === 'work' 
         ? '0 0 16px #f59e0b, 0 0 28px rgba(245, 158, 11, 0.6)' 
         : '0 0 14px #10b981, 0 0 24px rgba(16, 185, 129, 0.5)')
@@ -2112,9 +2858,6 @@ export default function DynamicIsland({
   const activeIndicators = useMemo(() => {
     const candidates = [];
 
-    if (isBtIndicatorActive) {
-      candidates.push({ id: 'bluetooth', time: indicatorTimestamps.bluetooth || 1 });
-    }
     if (isCamActive) {
       candidates.push({ id: 'camera', time: indicatorTimestamps.camera || 1 });
     }
@@ -2156,7 +2899,6 @@ export default function DynamicIsland({
     }
   }, [
     isPlaying,
-    isBtIndicatorActive,
     isCamActive,
     isMicActive,
     isDictating,
@@ -2328,7 +3070,7 @@ export default function DynamicIsland({
             className="flex items-center justify-center relative w-4 h-4 rounded-full bg-rose-500/20 text-rose-400 flex-shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-fadeIn cursor-pointer hover:scale-110 active:scale-95 transition-transform"
             title={`Gmail: ${mailConfig.unreadCount} unread email(s) (click to open)`}
           >
-            <span className="text-[10px] leading-none">✉️</span>
+            <IconMail className="w-2.5 h-2.5 text-rose-400" />
             <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_4px_#f43f5e]" />
           </div>
         );
@@ -2343,11 +3085,53 @@ export default function DynamicIsland({
   // Collapsed with Rolling Lyrics: 380px x 36px (Smooth rounded 20px pill)
   // Collapsed with Focus Mode Running: 350px x 36px (Smooth rounded 20px pill)
   // Expanded: 540px x 315px (or 210px greeting banner)
-  const islandStyle = isExpanded
+  const islandStyle = isSnippingActive
+    ? {
+        opacity: 0,
+        pointerEvents: 'none',
+        width: '230px',
+        height: '36px',
+        borderRadius: '20px',
+      }
+    : wakeStage === 'off'
+    ? {
+        opacity: 0,
+        pointerEvents: 'none',
+        width: '12px',
+        height: '12px',
+        borderRadius: '6px',
+      }
+    : wakeStage === 'seed'
+    ? {
+        opacity: 1,
+        pointerEvents: 'none',
+        width: '12px',
+        height: '12px',
+        borderRadius: '6px',
+        boxShadow: `0 0 0 1px ${theme.color}80, 0 0 30px ${theme.color}`,
+        borderColor: theme.color,
+      }
+    : wakeStage === 'greet'
+    ? {
+        width: `${Math.min(500, Math.max(380, (userName || 'Creator').length * 15 + 170))}px`,
+        height: '62px',
+        borderRadius: '31px',
+        boxShadow: `0 16px 45px rgba(0,0,0,0.85), 0 0 28px ${theme.color}35`,
+        borderColor: `${theme.color}50`,
+      }
+    : isExpanded
     ? {
         width: '540px',
-        height: isGreetingActive && !isHovered && !isPinned ? '210px' : '315px',
+        height: '315px',
         borderRadius: '24px',
+      }
+    : isUpdateAlertMode
+    ? {
+        width: '365px',
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(16, 185, 129, 0.45)',
+        borderColor: 'rgba(52, 211, 153, 0.55)',
       }
     : isHudMode
     ? {
@@ -2358,6 +3142,30 @@ export default function DynamicIsland({
           ? '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(56, 189, 248, 0.25)'
           : '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(251, 191, 36, 0.25)',
         borderColor: activeHud.type === 'volume' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)',
+      }
+    : isResultReadyMode
+    ? {
+        width: '270px',
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(74, 222, 128, 0.35)',
+        borderColor: 'rgba(74, 222, 128, 0.45)',
+      }
+    : isAiThinking && !isExpanded
+    ? {
+        width: `${collapsedWidth}px`,
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.95), 0 0 18px rgba(249, 115, 22, 0.4)',
+        borderColor: 'rgba(249, 115, 22, 0.55)',
+      }
+    : isDeviceAlertMode
+    ? {
+        width: '340px',
+        height: '36px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.95), 0 0 16px rgba(16, 185, 129, 0.35)',
+        borderColor: 'rgba(16, 185, 129, 0.45)',
       }
     : isMailAlertMode
     ? {
@@ -2389,11 +3197,114 @@ export default function DynamicIsland({
         borderRadius: '20px',
       };
 
+  // Apply Collapsed-State-Only Island Display settings (Size, Style, Material Black/Glass, See-through, Glass Colour, Music Colour)
+  const finalIslandStyle = (() => {
+    const isStandardCollapsed =
+      !isExpanded &&
+      !isUpdateAlertMode &&
+      !isSnippingActive &&
+      wakeStage !== 'off' &&
+      wakeStage !== 'seed' &&
+      wakeStage !== 'greet';
+
+    if (!isStandardCollapsed) {
+      return {
+        ...islandStyle,
+        backgroundColor: '#000000',
+      };
+    }
+
+    const baseWidth = parseFloat(islandStyle.width) || collapsedWidth;
+    const size = displaySettings.size || 'normal';
+    const scaledWidth =
+      size === 'compact'
+        ? Math.max(195, Math.round(baseWidth * 0.9))
+        : size === 'large'
+        ? Math.min(460, Math.round(baseWidth * 1.12))
+        : baseWidth;
+    const scaledHeight = size === 'compact' ? '32px' : size === 'large' ? '42px' : '36px';
+
+    const isAttached = (displaySettings.style || 'attached') === 'attached';
+    const radius = isAttached
+      ? size === 'large'
+        ? '0 0 22px 22px'
+        : '0 0 20px 20px'
+      : size === 'large'
+      ? '24px'
+      : '22px';
+
+    const seeThroughPct = Math.max(0, Math.min(85, Number(displaySettings.seeThrough) || 0));
+    const alpha = Math.max(0.15, 1 - seeThroughPct / 100);
+
+    // Resolve tint RGB for Colour Glass or Music Colour
+    const glassChoice = GLASS_COLOR_OPTIONS.find((g) => g.id === displaySettings.glassColor);
+    const songRgb =
+      Array.isArray(ambientPalette?.rgbTuple) && ambientPalette.rgbTuple.length === 3
+        ? ambientPalette.rgbTuple
+        : typeof ambientPalette?.r === 'number' &&
+          typeof ambientPalette?.g === 'number' &&
+          typeof ambientPalette?.b === 'number'
+        ? [ambientPalette.r, ambientPalette.g, ambientPalette.b]
+        : ambientPalette?.hex
+        ? hexToRgbTuple(ambientPalette.hex)
+        : null;
+    const hasActiveSong = Boolean(isPlaying || (trackData?.title && trackData?.artwork));
+    const hasMusicRgb = Boolean(hasActiveSong && songRgb);
+
+    let [r, g, b] = hexToRgbTuple(theme.accent || theme.color);
+    if (displaySettings.material === 'glass') {
+      if (displaySettings.glassColor && displaySettings.glassColor !== 'auto' && glassChoice?.rgb) {
+        [r, g, b] = glassChoice.rgb;
+      } else if (hasMusicRgb) {
+        // Automatic glass mode always follows the active song's dynamic extracted color!
+        [r, g, b] = songRgb;
+      }
+    } else if (displaySettings.musicColor && hasMusicRgb) {
+      [r, g, b] = songRgb;
+    }
+
+    const surfaceStyle =
+      displaySettings.material === 'glass'
+        ? {
+            backgroundColor: `rgba(${Math.round(r * 0.3)}, ${Math.round(g * 0.3)}, ${Math.round(b * 0.3)}, ${Math.min(0.84, alpha * 0.72).toFixed(2)})`,
+            backdropFilter: 'blur(22px) saturate(185%)',
+            WebkitBackdropFilter: 'blur(22px) saturate(185%)',
+            borderColor: islandStyle.borderColor || `rgba(${r}, ${g}, ${b}, 0.52)`,
+            boxShadow:
+              islandStyle.boxShadow ||
+              `0 14px 36px rgba(0, 0, 0, 0.65), 0 0 26px rgba(${r}, ${g}, ${b}, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22)`,
+          }
+        : seeThroughPct > 0 && displaySettings.musicColor && hasMusicRgb
+        ? {
+            backgroundColor: `rgba(${Math.round(r * 0.18)}, ${Math.round(g * 0.18)}, ${Math.round(b * 0.18)}, ${alpha.toFixed(2)})`,
+            backdropFilter: 'blur(16px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(150%)',
+            borderColor: islandStyle.borderColor || `rgba(${r}, ${g}, ${b}, 0.42)`,
+          }
+        : {
+            backgroundColor: `rgba(0, 0, 0, ${alpha.toFixed(2)})`,
+            backdropFilter: seeThroughPct > 0 ? 'blur(14px)' : undefined,
+            WebkitBackdropFilter: seeThroughPct > 0 ? 'blur(14px)' : undefined,
+          };
+
+    return {
+      ...islandStyle,
+      width: `${scaledWidth}px`,
+      height: scaledHeight,
+      borderRadius: radius,
+      borderTopWidth: isAttached ? '0px' : '1px',
+      ...surfaceStyle,
+    };
+  })();
+
   return (
     <div
       id="dynamic-island"
-      className="spring-anim relative bg-black text-white shadow-[0_28px_60px_rgba(0,0,0,0.98)] select-none flex flex-col items-center justify-between overflow-visible border border-[#1e1e22] cursor-default"
-      style={islandStyle}
+      className={`spring-anim relative text-white shadow-[0_28px_60px_rgba(0,0,0,0.98)] select-none flex flex-col items-center justify-between overflow-visible border border-[#1e1e22] ${
+        !isExpanded && displaySettings.openMode === 'click' ? 'cursor-pointer' : 'cursor-default'
+      }`}
+      style={finalIslandStyle}
+      onClick={!isExpanded && displaySettings.openMode === 'click' ? () => onRequestExpand?.() : undefined}
       onDragEnter={handleIslandDragEnter}
       onDragOver={handleIslandDragOver}
       onDragLeave={handleIslandDragLeave}
@@ -2401,10 +3312,164 @@ export default function DynamicIsland({
     >
 
       {/* ======================================================== */}
-      {/* 1. COLLAPSED ISLAND: HUD vs MAIL vs LYRICS vs 3-ZONE     */}
+      {/* 1. COLLAPSED ISLAND: RESULT READY vs DEVICE vs HUD vs MAIL vs LYRICS vs 3-ZONE */}
       {/* ======================================================== */}
-      {!isExpanded && (
-        isHudMode ? (
+      {!isExpanded && wakeStage !== 'seed' && wakeStage !== 'off' && (
+        wakeStage === 'greet' ? (
+          /* WAKE STAGE: GREETING PILL (Letter-by-letter reveal + Wave + Smiling Eyes) */
+          <div className="w-full h-full px-5 flex items-center justify-between gap-4 select-none animate-fadeIn">
+            {/* Left: Companion Eyes in Happy Smile */}
+            <div className="flex-shrink-0">
+              <MinimalEyes
+                expression="happy"
+                themeColor={theme.color}
+                themeShadow={theme.shadow}
+                size="lg"
+              />
+            </div>
+            {/* Right: Time-aware greeting + Wave + Letter-by-letter Name */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium tracking-wide">
+                <span>{getTimeGreeting()}</span>
+                <IconWave className="w-3.5 h-3.5 wave-hand inline-block text-neutral-300" />
+              </div>
+              <div className="text-lg font-bold tracking-tight truncate leading-tight bg-gradient-to-r from-emerald-300 via-sky-300 to-purple-300 bg-clip-text text-transparent">
+                {Array.from(userName || 'Creator').map((char, i) => (
+                  <span key={i} className="letter-pop" style={{ '--j': i }}>
+                    {char}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : isSnippingActive ? null : isUpdateAlertMode ? (
+          /* AUTO-UPDATE BANNER (User Request 10: "{Version} is ready to download" with [ Install ] button) */
+          <div
+            className="w-full h-full px-3.5 flex items-center justify-between gap-2 animate-fadeIn select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left: Sparkle Icon + Update Version / Progress */}
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+              <div className="relative flex items-center justify-center">
+                <IconSparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <span className="text-[11px] font-semibold text-white tracking-tight truncate max-w-[185px]">
+                {updateStatus.status === 'downloading' ? (
+                  <span className="text-sky-300 font-mono flex items-center gap-1.5">
+                    <span>Downloading</span>
+                    <span className="font-bold">{updateStatus.percent || 0}%</span>
+                  </span>
+                ) : updateStatus.status === 'ready' || updateReady ? (
+                  <span className="text-emerald-300">
+                    v{updateStatus.version || updateReady} ready to install
+                  </span>
+                ) : (
+                  <span>
+                    v{updateStatus.version || '1.0.1'} is ready to download
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* Right: Install Button + Dismiss */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleInstallUpdateClick}
+                disabled={isInstallingUpdate && updateStatus.status !== 'ready' && !updateReady}
+                className="px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md cursor-pointer disabled:opacity-50"
+                title="Click to install update"
+              >
+                <IconDownload className="w-2.5 h-2.5 stroke-[2.5]" />
+                <span>{updateStatus.status === 'ready' || updateReady ? 'Restart' : 'Install'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsUpdateDismissed(true)}
+                className="w-5 h-5 rounded-full hover:bg-white/15 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-[10px]"
+                title="Dismiss update alert"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ) : isResultReadyMode ? (
+          /* RESULT READY BANNER: Eyes on left, 'Result ready' on right, auto-dismisses after 2-3s */
+          <div
+            className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer select-none"
+            onClick={() => {
+              setIsResultReadyAlert(false);
+              setActiveTab('features');
+              setIsHovered(true);
+            }}
+            title="Result ready! Click to open"
+          >
+            {/* Left: Living Happy Eyes */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <MinimalEyes
+                expression="happy"
+                themeColor="#4ade80"
+                themeShadow="0 0 14px rgba(74, 222, 128, 0.9), 0 0 24px rgba(74, 222, 128, 0.4)"
+                size="sm"
+              />
+            </div>
+
+            {/* Right: 'Result ready' with glowing pill */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[11.5px] font-semibold text-white tracking-tight flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Result ready</span>
+              </span>
+              <span className="text-[8.5px] font-mono text-emerald-300 bg-emerald-500/20 border border-emerald-500/35 px-1.5 py-0.5 rounded-md font-bold">
+                View ↗
+              </span>
+            </div>
+          </div>
+        ) : isDeviceAlertMode ? (
+          /* PERIPHERAL / DEVICE CONNECTED BANNER (Removes all other icons/eyes) */
+          <div
+            className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
+            onClick={triggerRejoice}
+            title={`${activeDeviceAlert.name} Connected${activeDeviceAlert.battery != null ? ` • Battery: ${activeDeviceAlert.battery}%` : ''}`}
+          >
+            {/* Left: Device Icon with connection beacon */}
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+              <div className="relative flex items-center justify-center">
+                <span className="text-emerald-400">
+                  {renderPeripheralIcon(activeDeviceAlert.type, activeDeviceAlert.name)}
+                </span>
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+            </div>
+
+            {/* Middle: Device Name + Connected */}
+            <div className="flex-1 min-w-0 px-2 text-center overflow-hidden">
+              <span className="text-[11.5px] font-bold text-white tracking-tight truncate block">
+                {activeDeviceAlert.name} <span className="text-emerald-400 font-medium text-[10px]">Connected</span>
+              </span>
+            </div>
+
+            {/* Right: Battery percentage capsule or Paired badge */}
+            <div className="flex-shrink-0 flex items-center gap-1">
+              {activeDeviceAlert.battery != null ? (
+                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-[9px] font-bold">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="7" width="16" height="10" rx="2" ry="2" />
+                    <line x1="22" y1="11" x2="22" y2="13" />
+                  </svg>
+                  <span>{activeDeviceAlert.battery}%</span>
+                </div>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-[8px] font-bold tracking-wider flex items-center gap-1">
+                  <IconCheck className="w-2.5 h-2.5 text-emerald-400" />
+                  <span>CONNECTED</span>
+                </span>
+              )}
+            </div>
+          </div>
+        ) : isHudMode ? (
           /* HARDWARE VOLUME / BRIGHTNESS HUD PILL */
           <div
             className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
@@ -2437,16 +3502,16 @@ export default function DynamicIsland({
             <div className="flex-shrink-0 flex items-center justify-center w-5">
               {activeHud.type === 'volume' ? (
                 activeHud.muted || activeHud.value === 0 ? (
-                  <span className="text-[13px] text-neutral-400">🔇</span>
+                  <IconVolumeMute className="w-3.5 h-3.5 text-neutral-400" />
                 ) : activeHud.value < 35 ? (
-                  <span className="text-[13px] text-sky-300">🔈</span>
+                  <IconVolumeLow className="w-3.5 h-3.5 text-sky-300" />
                 ) : activeHud.value < 70 ? (
-                  <span className="text-[13px] text-sky-400">🔉</span>
+                  <IconVolumeMid className="w-3.5 h-3.5 text-sky-400" />
                 ) : (
-                  <span className="text-[13px] text-sky-400">🔊</span>
+                  <IconVolumeHigh className="w-3.5 h-3.5 text-sky-400" />
                 )
               ) : (
-                <span className="text-[14px] text-amber-400 animate-pulse">☀️</span>
+                <IconBrightness className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
               )}
             </div>
 
@@ -2488,7 +3553,7 @@ export default function DynamicIsland({
             {/* Left: Glowing Google Mail Envelope & Badge */}
             <div className="flex items-center gap-2 min-w-0">
               <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400">
-                <span className="text-[12px] leading-none animate-pulse">✉️</span>
+                <IconMail className="w-3 h-3 text-rose-400 animate-pulse" />
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
               </div>
               <div className="flex flex-col min-w-0">
@@ -2510,13 +3575,13 @@ export default function DynamicIsland({
             </div>
           </div>
         ) : isLyricsMode ? (
-          /* LYRICS MODE: Expands to fit rolling lyrics, hides eyes, shows only lyrics + music playing icon */
+          /* LYRICS MODE: Shows track intro for 2s on change, then rolls synchronized lyrics */
           <div
             className="w-full h-full px-3.5 flex items-center justify-between animate-fadeIn cursor-pointer"
             onClick={triggerRejoice}
-            title={`Spotify Lyrics • ${trackData.title}`}
+            title={showSongIntro ? `Now Playing: ${trackData.title}` : `Spotify Lyrics • ${trackData.title}`}
           >
-            {/* Left / Center: Rolling Synchronized Lyrics Line */}
+            {/* Left / Center: Song Intro vs Rolling Synchronized Lyrics Line */}
             <div className="flex-1 flex items-center gap-2 min-w-0 pr-3">
               <svg
                 className="w-3.5 h-3.5 flex-shrink-0 animate-pulse"
@@ -2527,13 +3592,25 @@ export default function DynamicIsland({
                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
               </svg>
               <div className="flex-1 min-w-0 overflow-hidden">
-                <p
-                  key={activeLyricIndex}
-                  className="text-[11.5px] font-medium text-neutral-100 truncate tracking-tight animate-lyric-slide"
-                  title={currentLyricLine || trackData.title}
-                >
-                  {currentLyricLine || '♪ Instrumental ♪'}
-                </p>
+                {showSongIntro ? (
+                  <p
+                    key="song-intro"
+                    className="text-[11.5px] font-semibold text-white truncate tracking-tight animate-fadeIn flex items-center gap-1"
+                    title={`${trackData.title} • ${trackData.artist}`}
+                  >
+                    <IconAudio className="w-3 h-3 text-[#10b981] inline-block shrink-0" />
+                    <span className="truncate">{trackData.title}</span>
+                    {trackData.artist ? <span className="text-neutral-400 font-normal"> • {trackData.artist}</span> : null}
+                  </p>
+                ) : (
+                  <p
+                    key={activeLyricIndex}
+                    className="text-[11.5px] font-medium text-neutral-100 truncate tracking-tight animate-lyric-slide"
+                    title={currentLyricLine || trackData.title}
+                  >
+                    {renderLyricContent(currentLyricLine, true)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -2565,8 +3642,14 @@ export default function DynamicIsland({
           >
             {/* Left: Task Name & Phase badge */}
             <div className="flex items-center gap-1.5 min-w-0 max-w-[120px]">
-              <span className="text-xs flex-shrink-0">
-                {focusPhase === 'work' ? '🎯' : focusPhase === 'shortBreak' ? '☕' : '🌴'}
+              <span className="flex-shrink-0">
+                {focusPhase === 'work' ? (
+                  <IconTarget className="w-3.5 h-3.5 text-amber-400" />
+                ) : focusPhase === 'shortBreak' ? (
+                  <IconCoffee className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <IconPalm className="w-3.5 h-3.5 text-teal-400" />
+                )}
               </span>
               <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-neutral-100 truncate tracking-tight" title={focusTaskName}>
@@ -2657,107 +3740,25 @@ export default function DynamicIsland({
       )}
 
       {/* ======================================================== */}
-      {/* 2. EXPANDED DASHBOARD / GREETING BANNER                  */}
+      {/* 2. EXPANDED DASHBOARD                                    */}
       {/* ======================================================== */}
       {isExpanded && (
-        <div className="w-full h-full px-3.5 pt-2.5 pb-2.5 flex flex-col justify-between animate-fadeIn overflow-hidden">
-          {isGreetingActive && !isHovered && !isPinned ? (
-            /* STARTUP / BOOT-UP GREETING HERO BANNER */
-            <div className="flex-1 flex flex-col justify-between py-1 text-center animate-fadeIn select-none">
-              {/* Greeting Top Bar */}
-              <div className="flex items-center justify-between text-xs pb-1.5 border-b border-[#26262a]">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white tracking-wide text-xs flex items-center gap-1">
-                    <span>Eyeland</span>
-                    <span style={{ color: theme.color }}>AI</span>
-                  </span>
-                  <span className="text-[10px] text-neutral-500">•</span>
-                  <span className="text-[10px] text-neutral-400 font-mono">
-                    Startup Greeting
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={onTriggerGreeting}
-                    title="Change Greeting (Shuffle)"
-                    className="p-1 px-2.5 rounded-full text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors"
-                  >
-                    🎲 Shuffle
-                  </button>
-                  <button
-                    onClick={onDismissGreeting}
-                    className="p-1 px-2.5 rounded-full text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors"
-                  >
-                    Dismiss ✕
-                  </button>
-                </div>
-              </div>
+        <div className="w-full h-full px-3.5 pt-2.5 pb-2.5 flex flex-col justify-between animate-fadeIn overflow-hidden relative">
+          {/* BACKDROP SCRIM: Smoothly dims & blurs entire island contents behind Wi-Fi, Bluetooth & Options menus */}
+          {(isDropdownOpen || isOptionsMenuOpen) && (
+            <div
+              className="absolute inset-0 z-40 bg-black/85 backdrop-blur-sm rounded-[24px] animate-fadeIn cursor-pointer"
+              onClick={closeAllDropdowns}
+            />
+          )}
 
-              {/* Center Hero: Glowing Greeting Eyes & Personalized Message */}
-              <div className="my-auto flex flex-col items-center justify-center py-2">
-                <div className="mb-2.5">
-                  <MinimalEyes
-                    expression="greeting"
-                    themeColor={theme.color}
-                    themeShadow={theme.shadow}
-                    size="lg"
-                  />
-                </div>
-                <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-                  <span>{greeting?.headline || `Good morning, ${greeting?.userName || 'Friend'}! ✨`}</span>
-                </h2>
-                <p className="text-xs text-neutral-300 mt-1 max-w-md">
-                  {greeting?.subtext || 'What are we up to today?'}
-                </p>
-
-                {/* Quick Action Pills */}
-                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-                  <button
-                    onClick={() => {
-                      onDismissGreeting?.();
-                      setActiveTab('ai');
-                    }}
-                    className="px-3.5 py-1.5 rounded-full bg-[#0e3b24] hover:bg-[#155333] border border-[#1b6b3e] text-xs text-[#4ade80] font-medium flex items-center gap-1.5 shadow-[0_0_12px_rgba(74,222,128,0.25)] active:scale-95 transition-all"
-                  >
-                    <span>💬</span>
-                    <span>Ask Eyeland AI</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDismissGreeting?.();
-                      setActiveTab('focus');
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-[#18181b] hover:bg-[#232328] border border-[#2b2b32] text-xs text-neutral-200 flex items-center gap-1.5 active:scale-95 transition-all"
-                  >
-                    <span>⏱️</span>
-                    <span>Focus Timer</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDismissGreeting?.();
-                      handleScanScreen();
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-[#18181b] hover:bg-[#232328] border border-[#2b2b32] text-xs text-neutral-200 flex items-center gap-1.5 active:scale-95 transition-all"
-                  >
-                    <span>📸</span>
-                    <span>Scan Screen</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-[9px] text-neutral-500 font-mono">
-                Auto-collapsing soon • Hover or click to explore dashboard
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* TOP BAR: APP TITLE • DATE & TIME • OPTIONS */}
-          <div className="flex items-center justify-between text-xs pb-1.5 border-b border-[#26262a] relative z-50">
+          {/* TOP BAR: APP TITLE • DATE & TIME • OPTIONS */}
+          <div className={`flex items-center justify-between text-xs pb-1.5 border-b border-[#26262a] relative z-50 ${isWakingUp ? 'pop-in-card' : ''}`} style={{ '--i': 0 }}>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white tracking-wide text-xs flex items-center gap-1">
                   <span>Eyeland</span>
-                  <span style={{ color: theme.color }}>AI</span>
+                  <span style={{ color: theme.accent || theme.color }}>AI</span>
                 </span>
                 <span className="text-[10px] text-neutral-500">•</span>
                 <span className="text-[10px] text-neutral-400 font-mono">
@@ -2770,7 +3771,7 @@ export default function DynamicIsland({
                     setModelStatus(
                       modelStatus.includes('Gemini') 
                         ? 'Claude Code / Codex • Ready' 
-                        : 'Gemini 2.5 Flash Vision'
+                        : 'Gemini Flash Vision'
                     );
                   }}
                   className="text-[10px] text-red-400/90 underline cursor-pointer hover:text-red-300 transition-colors"
@@ -2842,62 +3843,179 @@ export default function DynamicIsland({
                 </svg>
               </button>
 
-              {/* Replay Startup Greeting Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTriggerGreeting?.();
-                }}
-                title="Test Boot Greeting (Rotate Messages)"
-                className="p-1 px-1.5 rounded-md text-neutral-400 hover:text-amber-300 hover:bg-neutral-800 transition-colors text-xs"
-              >
-                👋
-              </button>
+              {/* GitHub Auto-Update Ready Pill */}
+              {updateReady && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.electronAPI?.restartAndInstallUpdate?.();
+                  }}
+                  title={`Eyeland v${updateReady} is ready to install! Click to restart.`}
+                  className="p-1 px-2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500 hover:text-black transition-all text-[10px] font-semibold flex items-center gap-1 cursor-pointer animate-pulse"
+                >
+                  <IconSparkles className="w-3 h-3 text-emerald-300" />
+                  <span>Update</span>
+                </button>
+              )}
 
               {/* Options Menu Button (•••) */}
               <button
-                onClick={() => {
-                  const keys = Object.keys(themes);
-                  const nextIndex = (keys.indexOf(theme.name) + 1) % keys.length;
-                  setThemeKey(keys[nextIndex]);
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleOptionsMenu();
                 }}
-                title="Theme & Options"
-                className="p-1 px-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                title="Options"
+                className={`p-1 px-1.5 rounded-lg transition-all cursor-pointer ${
+                  isOptionsMenuOpen
+                    ? 'bg-neutral-800 text-white border border-neutral-700'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800 border border-transparent'
+                }`}
               >
                 •••
               </button>
 
-              {/* Eyeland Hub / Dashboard Button (⚙️) */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.electronAPI?.openDashboard?.();
-                }}
-                title="Open Eyeland Hub"
-                className="p-1 px-1.5 rounded-md text-neutral-400 hover:text-emerald-400 hover:bg-neutral-800 transition-colors text-xs cursor-pointer"
-              >
-                ⚙️
-              </button>
+              {/* OPTIONS MENU DROPDOWN (Settings, Check for updates, Fold in, Restart, Exit) */}
+              {isOptionsMenuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-8 z-[100] w-52 border border-white/20 rounded-2xl shadow-[0_28px_65px_rgba(0,0,0,0.98)] p-2 flex flex-col gap-1 animate-scaleIn select-none"
+                  style={{ backgroundColor: '#101118', opacity: 1 }}
+                >
+                  <button
+                    onClick={() => {
+                      closeAllDropdowns();
+                      window.electronAPI?.openDashboard?.();
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium text-neutral-200 hover:bg-white/10 hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>{t.settings}</span>
+                  </button>
 
-              {/* CONNECTIVITY & SENSOR DROPDOWN POPOVER (Compact, opaque, contained) */}
+                  <button
+                    onClick={handleCheckForUpdates}
+                    disabled={updateStatus.status === 'checking' || updateStatus.status === 'downloading'}
+                    className={`w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
+                      updateStatus.status === 'ready' || updateReady
+                        ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25'
+                        : updateStatus.status === 'up-to-date'
+                        ? 'text-emerald-400 hover:bg-white/10'
+                        : updateStatus.status === 'downloading'
+                        ? 'text-sky-300 bg-sky-500/10'
+                        : 'text-neutral-200 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <svg
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        updateStatus.status === 'checking'
+                          ? 'animate-spin text-sky-400'
+                          : updateStatus.status === 'ready' || updateReady || updateStatus.status === 'up-to-date'
+                          ? 'text-emerald-400'
+                          : 'text-neutral-400'
+                      }`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span className="truncate">
+                      {updateStatus.status === 'checking'
+                        ? t.checking
+                        : updateStatus.status === 'downloading'
+                        ? `Downloading ${updateStatus.percent || 0}%`
+                        : updateStatus.status === 'ready' || updateReady
+                        ? `Install v${updateStatus.version || updateReady}`
+                        : updateStatus.status === 'up-to-date'
+                        ? t.upToDate
+                        : updateStatus.status === 'dev-mode'
+                        ? `${t.upToDate} (Dev)`
+                        : updateStatus.status === 'error'
+                        ? 'Update check failed'
+                        : t.checkUpdates}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      closeAllDropdowns();
+                      if (onFoldIn) {
+                        onFoldIn();
+                      } else {
+                        setIsPinned?.(false);
+                        setIsHovered?.(false);
+                      }
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium text-neutral-200 hover:bg-white/10 hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                    <span>{t.foldIn}</span>
+                  </button>
+
+                  <div className="my-1 border-t border-white/[0.08]" />
+
+                  <button
+                    onClick={() => {
+                      closeAllDropdowns();
+                      window.electronAPI?.restartApp?.();
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium text-neutral-200 hover:bg-white/10 hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 2v6h-6" />
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                      <path d="M3 22v-6h6" />
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                    </svg>
+                    <span>{t.restart}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      closeAllDropdowns();
+                      window.electronAPI?.exitApp?.();
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                      <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                    <span>{t.exit}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* REDESIGNED WI-FI & BLUETOOTH CONNECTIVITY POPOVER (Real OS Control, Elevated Contrast, 100% Solid Pitch-Black Surface, No Bleed-Through) */}
               {isDropdownOpen && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute right-0 top-8 z-50 w-72 bg-[#161618] border border-neutral-700 rounded-xl shadow-[0_18px_40px_rgba(0,0,0,0.95)] p-2.5 flex flex-col gap-2 max-h-[210px] overflow-y-auto animate-fadeIn select-none"
-                  style={{ scrollbarWidth: 'thin' }}
+                  className="absolute right-0 top-8 z-[100] w-[350px] border border-white/20 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.98)] p-3.5 flex flex-col gap-2.5 max-h-[250px] overflow-y-auto no-scrollbar animate-scaleIn select-none"
+                  style={{ backgroundColor: '#101118', opacity: 1 }}
                 >
-                  {/* Tab Selector Header */}
-                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800">
-                    <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
+                  {/* Segmented Pill Header: Wi-Fi | Bluetooth */}
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/[0.08]">
+                    <div className="flex items-center gap-1 bg-[#1c1d28] p-1 rounded-xl border border-white/[0.08] flex-1">
                       <button
+                        type="button"
                         onClick={() => setActiveDropdownTab('wifi')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 transition-all ${
+                        className={`flex-1 px-3 py-1.5 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           activeDropdownTab === 'wifi'
-                            ? 'bg-neutral-800 text-sky-400 shadow-sm'
+                            ? 'bg-white/15 text-white shadow-sm font-bold'
                             : 'text-neutral-400 hover:text-neutral-200'
                         }`}
                       >
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg className="w-3.5 h-3.5" style={activeDropdownTab === 'wifi' ? { color: theme.accent || '#38bdf8' } : undefined} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                           <path d="M5 12.55a11 11 0 0 1 14.08 0" />
                           <path d="M1.42 9a16 16 0 0 1 21.16 0" />
                           <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
@@ -2907,312 +4025,235 @@ export default function DynamicIsland({
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => setActiveDropdownTab('bluetooth')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 transition-all ${
+                        className={`flex-1 px-3 py-1.5 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           activeDropdownTab === 'bluetooth'
-                            ? 'bg-neutral-800 text-indigo-400 shadow-sm'
+                            ? 'bg-white/15 text-white shadow-sm font-bold'
                             : 'text-neutral-400 hover:text-neutral-200'
                         }`}
                       >
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg className="w-3.5 h-3.5" style={activeDropdownTab === 'bluetooth' ? { color: theme.accent || '#818cf8' } : undefined} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                           <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5" />
                         </svg>
                         <span>Bluetooth</span>
                       </button>
-
-                      <button
-                        onClick={() => setActiveDropdownTab('sensors')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 transition-all ${
-                          activeDropdownTab === 'sensors'
-                            ? 'bg-neutral-800 text-amber-400 shadow-sm'
-                            : 'text-neutral-400 hover:text-neutral-200'
-                        }`}
-                      >
-                        <span>⚡</span>
-                        <span>Sensors</span>
-                      </button>
                     </div>
 
                     <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onDropdownChange?.(false);
-                      }}
-                      className="text-neutral-500 hover:text-white p-0.5 text-xs"
+                      type="button"
+                      onClick={closeAllDropdowns}
+                      className="w-7 h-7 rounded-xl bg-white/[0.05] hover:bg-white/15 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 border border-white/[0.08]"
+                      title="Close"
                     >
-                      ✕
+                      <IconX className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  {/* 1. WI-FI TAB CONTENT (Real Device Data) */}
+                  {/* 1. WI-FI PANEL (Real Windows Radio + Netsh Connect) */}
                   {activeDropdownTab === 'wifi' && (
-                    <div className="flex flex-col gap-1.5">
-                      {/* Wi-Fi Switch Toggle */}
-                      <div className="flex items-center justify-between py-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-neutral-200">Wi-Fi</span>
-                          <span className="text-[9px] text-neutral-400 font-mono truncate max-w-[100px]" title={currentWifi}>
-                            {isWifiOn ? currentWifi : 'Off'}
-                          </span>
+                    <div className="flex flex-col gap-2">
+                      {/* Master Hardware Toggle Card */}
+                      <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#1a1b26] border border-white/[0.08]">
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-white leading-tight">Wi-Fi Radio</div>
+                          <div className="text-[9.5px] text-neutral-400 font-mono truncate max-w-[170px] mt-0.5">
+                            {isRadioBusy ? 'Updating radio...' : isWifiOn ? (currentWifi || 'Hardware Active') : 'Turned Off'}
+                          </div>
                         </div>
                         <button
-                          onClick={() => setIsWifiOn(!isWifiOn)}
-                          className={`w-7 h-4 rounded-full transition-colors p-0.5 flex items-center ${
-                            isWifiOn ? 'bg-sky-500 justify-end' : 'bg-neutral-800 justify-start'
+                          type="button"
+                          onClick={handleToggleWifi}
+                          disabled={isRadioBusy}
+                          className={`w-9 h-5 rounded-full p-0.5 border transition-all cursor-pointer flex items-center disabled:opacity-50 ${
+                            isWifiOn ? 'justify-end' : 'justify-start bg-neutral-800 border-white/15'
                           }`}
+                          style={
+                            isWifiOn
+                              ? { backgroundColor: theme.softBg || 'rgba(56,189,248,0.25)', borderColor: theme.border || 'rgba(56,189,248,0.6)' }
+                              : undefined
+                          }
                         >
-                          <span className="w-3 h-3 rounded-full bg-white shadow-sm block" />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shadow-md block transition-all"
+                            style={{ backgroundColor: isWifiOn ? (theme.accent || '#38bdf8') : '#a3a3a3' }}
+                          />
                         </button>
                       </div>
 
                       {isWifiOn ? (
                         <>
-                          {/* Connected Network (Real Data) */}
-                          <div className="p-1.5 px-2 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className="text-sky-400 text-xs">📶</span>
-                              <div className="flex flex-col truncate">
-                                <span className="text-[10px] font-medium text-neutral-100 flex items-center gap-1 truncate">
-                                  <span className="truncate max-w-[90px]" title={currentWifi}>{currentWifi}</span>
-                                  <span className="text-[8px] px-1 rounded bg-sky-500/20 text-sky-300 font-mono">Connected</span>
+                          {/* Active Network Card */}
+                          <div className="p-2.5 rounded-xl bg-[#1e202c] border border-white/[0.1] flex items-center justify-between gap-2.5 shadow-sm">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_8px_currentColor]"
+                                  style={{ color: currentWifi && currentWifi !== 'Disconnected' ? (theme.accent || '#34d399') : '#737373', backgroundColor: currentWifi && currentWifi !== 'Disconnected' ? (theme.accent || '#34d399') : '#737373' }}
+                                />
+                                <span className="text-[11px] font-semibold text-white truncate" title={currentWifi}>
+                                  {currentWifi || 'Not Connected'}
                                 </span>
-                                <span className="text-[8px] text-neutral-400 font-mono truncate">
-                                  {telemetry.wifi?.band || '2.4 GHz'} • {telemetry.wifi?.speed || '286.8 Mbps'} • {telemetry.wifi?.signal || 80}%
-                                </span>
+                              </div>
+                              <div className="text-[9px] text-neutral-400 font-mono truncate pl-4 mt-0.5">
+                                {telemetry.wifi?.band || 'Wi-Fi'} • {telemetry.wifi?.speed || 'Active'} • {telemetry.wifi?.signal || 0}%
                               </div>
                             </div>
-                            <button
-                              onClick={() => setCurrentWifi(currentWifi === 'Disconnected' ? (telemetry.wifi?.ssid || 'Connected Network') : 'Disconnected')}
-                              className="text-[8px] text-neutral-400 hover:text-rose-400 px-1 py-0.5 rounded bg-neutral-800 transition-colors ml-1"
-                            >
-                              {currentWifi === 'Disconnected' ? 'Connect' : 'Disconnect'}
-                            </button>
-                          </div>
-
-                          {/* Available Networks List (Real Data) */}
-                          <div className="flex flex-col gap-1 pt-0.5">
-                            <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-semibold">Visible Networks</span>
-                            {wifiNetworks.filter(n => n.name !== currentWifi).length > 0 ? (
-                              wifiNetworks.filter(n => n.name !== currentWifi).slice(0, 3).map(net => (
-                                <div
-                                  key={net.name}
-                                  onClick={() => setCurrentWifi(net.name)}
-                                  className="p-1 px-1.5 rounded bg-neutral-900/60 hover:bg-neutral-800 flex items-center justify-between text-xs cursor-pointer transition-colors"
-                                >
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <span className="text-neutral-400 text-[10px]">📶</span>
-                                    <span className="text-[10px] text-neutral-300 font-medium truncate max-w-[120px]">{net.name}</span>
-                                  </div>
-                                  <span className="text-[8px] font-mono text-sky-400">Join</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-[9px] text-neutral-500 font-mono py-1 px-1">
-                                {currentWifi !== 'Disconnected' ? 'Primary active network connected' : 'Scanning...'}
-                              </div>
+                            {currentWifi && currentWifi !== 'Disconnected' && (
+                              <button
+                                type="button"
+                                onClick={handleDisconnectWifi}
+                                disabled={isRadioBusy}
+                                className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-rose-500/20 text-[9.5px] font-medium text-neutral-300 hover:text-rose-300 border border-white/[0.08] hover:border-rose-500/30 transition-colors cursor-pointer shrink-0"
+                              >
+                                Disconnect
+                              </button>
                             )}
                           </div>
+
+                          {/* Nearby Saved Networks */}
+                          {wifiNetworks.filter((n) => n.name && n.name !== currentWifi).length > 0 && (
+                            <div className="flex flex-col gap-1 max-h-[70px] overflow-y-auto no-scrollbar bg-[#161722] p-1.5 rounded-xl border border-white/[0.06]">
+                              <span className="text-[8.5px] font-mono uppercase tracking-wider text-neutral-400 px-1 font-semibold">
+                                Nearby Networks
+                              </span>
+                              {wifiNetworks
+                                .filter((n) => n.name && n.name !== currentWifi)
+                                .slice(0, 4)
+                                .map((net) => (
+                                  <button
+                                    key={net.name}
+                                    type="button"
+                                    onClick={() => handleConnectWifi(net.name)}
+                                    disabled={isRadioBusy}
+                                    className="w-full px-2 py-1.5 rounded-lg bg-[#1f212c] hover:bg-[#282b3a] border border-white/[0.06] hover:border-white/15 flex items-center justify-between text-left transition-colors cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-neutral-200 font-medium truncate max-w-[175px]">
+                                      {net.name}
+                                    </span>
+                                    <span
+                                      className="text-[9px] font-mono font-semibold"
+                                      style={{ color: theme.accent || '#38bdf8' }}
+                                    >
+                                      Connect
+                                    </span>
+                                  </button>
+                                ))}
+                            </div>
+                          )}
                         </>
                       ) : (
-                        <div className="py-2 text-center text-neutral-500 text-[10px]">
-                          Wi-Fi is currently turned off.
+                        <div className="py-3 px-2 rounded-xl bg-[#1a1b26] border border-white/[0.08] text-center text-neutral-400 text-[10px]">
+                          Wi-Fi hardware is turned off.
                         </div>
                       )}
 
-                      <div className="pt-1 border-t border-neutral-800 flex items-center justify-between text-[8px] text-neutral-400">
-                        <span className="truncate max-w-[140px]" title={telemetry.wifi?.adapter}>
-                          {telemetry.wifi?.adapter || 'MediaTek Wi-Fi 6'}
+                      <div className="pt-1.5 border-t border-white/[0.08] flex items-center justify-between text-[9.5px] text-neutral-400">
+                        <span className="truncate max-w-[150px] font-mono text-[9px] text-neutral-400" title={telemetry.wifi?.adapter}>
+                          {telemetry.wifi?.adapter || 'Wi-Fi Adapter'}
                         </span>
-                        <span className="hover:text-sky-400 cursor-pointer">
-                          Network Settings ↗
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => window.electronAPI?.openWindowsSettings?.('ms-settings:network-wifi')}
+                          className="text-neutral-300 hover:text-white font-medium cursor-pointer transition-colors inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/[0.06]"
+                        >
+                          <span>Windows Settings</span>
+                          <svg className="w-2.5 h-2.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7M7 7h10v10" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  {/* 2. BLUETOOTH TAB CONTENT (Real Device Data) */}
+                  {/* 2. BLUETOOTH PANEL (Real Windows Radio + Paired Devices) */}
                   {activeDropdownTab === 'bluetooth' && (
-                    <div className="flex flex-col gap-1.5">
-                      {/* Bluetooth Switch Toggle */}
-                      <div className="flex items-center justify-between py-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-neutral-200">Bluetooth</span>
-                          <span className="text-[9px] text-neutral-400 font-mono">
-                            {isBluetoothOn ? 'Active' : 'Off'}
-                          </span>
+                    <div className="flex flex-col gap-2">
+                      {/* Master Hardware Toggle Card */}
+                      <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#1a1b26] border border-white/[0.08]">
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-white leading-tight">Bluetooth Radio</div>
+                          <div className="text-[9.5px] text-neutral-400 font-mono mt-0.5">
+                            {isRadioBusy ? 'Updating radio...' : isBluetoothOn ? 'On • Discoverable' : 'Turned Off'}
+                          </div>
                         </div>
                         <button
-                          onClick={() => setIsBluetoothOn(!isBluetoothOn)}
-                          className={`w-7 h-4 rounded-full transition-colors p-0.5 flex items-center ${
-                            isBluetoothOn ? 'bg-indigo-500 justify-end' : 'bg-neutral-800 justify-start'
+                          type="button"
+                          onClick={handleToggleBluetooth}
+                          disabled={isRadioBusy}
+                          className={`w-9 h-5 rounded-full p-0.5 border transition-all cursor-pointer flex items-center disabled:opacity-50 ${
+                            isBluetoothOn ? 'justify-end' : 'justify-start bg-neutral-800 border-white/15'
                           }`}
+                          style={
+                            isBluetoothOn
+                              ? { backgroundColor: theme.softBg || 'rgba(129,140,248,0.25)', borderColor: theme.border || 'rgba(129,140,248,0.6)' }
+                              : undefined
+                          }
                         >
-                          <span className="w-3 h-3 rounded-full bg-white shadow-sm block" />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shadow-md block transition-all"
+                            style={{ backgroundColor: isBluetoothOn ? (theme.accent || '#818cf8') : '#a3a3a3' }}
+                          />
                         </button>
                       </div>
 
                       {isBluetoothOn ? (
-                        <>
-                          {/* Connected & Paired Devices (Real User Devices) */}
-                          <div className="flex flex-col gap-1 max-h-[90px] overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
-                            <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-semibold">Paired Devices ({btDevices.length})</span>
-                            {btDevices.map(dev => (
+                        <div className="flex flex-col gap-1 max-h-[105px] overflow-y-auto no-scrollbar bg-[#161722] p-1.5 rounded-xl border border-white/[0.06]">
+                          <span className="text-[8.5px] font-mono uppercase tracking-wider text-neutral-400 px-1 font-semibold">
+                            Devices ({btDevices.length})
+                          </span>
+                          {btDevices.length > 0 ? (
+                            btDevices.map((dev) => (
                               <div
                                 key={dev.id}
-                                className="p-1 px-1.5 rounded bg-neutral-900/60 hover:bg-neutral-800 flex items-center justify-between text-xs transition-colors"
+                                className="px-2.5 py-1.5 rounded-xl bg-[#1e202c] border border-white/[0.08] flex items-center justify-between gap-2"
                               >
-                                <div className="flex items-center gap-1.5 truncate">
-                                  <span className="text-xs">
-                                    {dev.type === 'headphones' ? '🎧' : dev.type === 'keyboard' ? '⌨️' : dev.type === 'mouse' ? '🖱️' : dev.type === 'gamepad' ? '🎮' : '📶'}
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_8px_currentColor]"
+                                    style={{ color: dev.connected ? (theme.accent || '#34d399') : '#525252', backgroundColor: dev.connected ? (theme.accent || '#34d399') : '#525252' }}
+                                  />
+                                  <span className="text-[10.5px] text-neutral-200 font-medium truncate" title={dev.name}>
+                                    {dev.name}
                                   </span>
-                                  <span className="text-[10px] text-neutral-200 font-medium truncate max-w-[110px]" title={dev.name}>{dev.name}</span>
                                 </div>
-
-                                <div className="flex items-center gap-1">
-                                  <span className={`text-[8px] font-mono px-1 rounded ${dev.connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-neutral-800 text-neutral-400'}`}>
-                                    {dev.connected ? 'Active' : 'Paired'}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      setBtDevices(prev => prev.map(d => {
-                                        if (d.id === dev.id) {
-                                          const nextConn = !d.connected;
-                                          if (nextConn) triggerBluetoothIndicator();
-                                          return { ...d, connected: nextConn };
-                                        }
-                                        return d;
-                                      }));
-                                    }}
-                                    className={`text-[8px] px-1 py-0.2 rounded transition-colors ${
-                                      dev.connected
-                                        ? 'bg-neutral-800 text-neutral-400 hover:text-rose-400'
-                                        : 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30'
-                                    }`}
-                                  >
-                                    {dev.connected ? '✕' : 'Connect'}
-                                  </button>
-                                </div>
+                                <span
+                                  className="text-[8.5px] font-mono px-2 py-0.5 rounded-md shrink-0 font-medium border"
+                                  style={
+                                    dev.connected
+                                      ? { backgroundColor: theme.softBg || 'rgba(52,211,153,0.18)', borderColor: theme.border || 'rgba(52,211,153,0.4)', color: theme.accent || '#34d399' }
+                                      : { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)', color: '#a3a3a3' }
+                                  }
+                                >
+                                  {dev.connected ? 'Connected' : 'Paired'}
+                                </span>
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Quick Ping Test Button */}
-                          <button
-                            onClick={triggerBluetoothIndicator}
-                            className="w-full mt-0.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-[9px] text-indigo-300 font-medium flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm"
-                          >
-                            <span>⚡</span>
-                            <span>Simulate Device Connect (5s Blink)</span>
-                          </button>
-                        </>
+                            ))
+                          ) : (
+                            <div className="py-2.5 text-center text-[9.5px] text-neutral-500 font-mono">
+                              No paired Bluetooth devices found
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <div className="py-2 text-center text-neutral-500 text-[10px]">
-                          Bluetooth is currently turned off.
+                        <div className="py-3 px-2 rounded-xl bg-[#1a1b26] border border-white/[0.08] text-center text-neutral-400 text-[10px]">
+                          Bluetooth hardware is turned off.
                         </div>
                       )}
 
-                      <div className="pt-1 border-t border-neutral-800 flex items-center justify-between text-[8px] text-neutral-400">
-                        <span className="truncate max-w-[140px]" title={telemetry.bluetooth?.adapter}>
-                          {telemetry.bluetooth?.adapter || 'MediaTek Bluetooth'}
+                      <div className="pt-1.5 border-t border-white/[0.08] flex items-center justify-between text-[9.5px] text-neutral-400">
+                        <span className="truncate max-w-[150px] font-mono text-[9px] text-neutral-400" title={telemetry.bluetooth?.adapter}>
+                          {telemetry.bluetooth?.adapter || 'Bluetooth Adapter'}
                         </span>
-                        <span className="hover:text-indigo-400 cursor-pointer">
-                          Bluetooth Settings ↗
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. SENSORS & INDICATORS TAB CONTENT */}
-                  {activeDropdownTab === 'sensors' && (
-                    <div className="flex flex-col gap-1.5 animate-fadeIn">
-                      <div className="flex items-center justify-between pb-1 border-b border-neutral-800 text-[9px] text-neutral-400 font-mono">
-                        <span>ISLAND SENSORS</span>
-                        <span className="text-amber-400 font-bold">{activeIndicators.length}/3 STACKED</span>
-                      </div>
-
-                      {/* Camera In Use */}
-                      <div className="flex items-center justify-between py-1 px-1.5 rounded-lg bg-neutral-900/70 border border-neutral-800">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-emerald-400 text-xs">📷</span>
-                          <span className="text-[10px] text-neutral-200 font-medium">Camera In Use</span>
-                        </div>
                         <button
-                          onClick={toggleCameraIndicator}
-                          className={`w-7 h-4 rounded-full transition-colors p-0.5 flex items-center ${
-                            isCamActive ? 'bg-emerald-500 justify-end' : 'bg-neutral-800 justify-start'
-                          }`}
+                          type="button"
+                          onClick={() => window.electronAPI?.openWindowsSettings?.('ms-settings:bluetooth')}
+                          className="text-neutral-300 hover:text-white font-medium cursor-pointer transition-colors inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/[0.06]"
                         >
-                          <span className="w-3 h-3 rounded-full bg-white shadow-sm block" />
-                        </button>
-                      </div>
-
-                      {/* Microphone In Use */}
-                      <div className="flex items-center justify-between py-1 px-1.5 rounded-lg bg-neutral-900/70 border border-neutral-800">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-amber-400 text-xs">🎙️</span>
-                          <span className="text-[10px] text-neutral-200 font-medium">Microphone In Use</span>
-                        </div>
-                        <button
-                          onClick={toggleMicIndicator}
-                          className={`w-7 h-4 rounded-full transition-colors p-0.5 flex items-center ${
-                            isMicActive ? 'bg-amber-500 justify-end' : 'bg-neutral-800 justify-start'
-                          }`}
-                        >
-                          <span className="w-3 h-3 rounded-full bg-white shadow-sm block" />
-                        </button>
-                      </div>
-
-                      {/* Airplane Mode */}
-                      <div className="flex items-center justify-between py-1 px-1.5 rounded-lg bg-neutral-900/70 border border-neutral-800">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-orange-400 text-xs">✈️</span>
-                          <span className="text-[10px] text-neutral-200 font-medium">Airplane Mode</span>
-                        </div>
-                        <button
-                          onClick={toggleAirplaneMode}
-                          className={`w-7 h-4 rounded-full transition-colors p-0.5 flex items-center ${
-                            isAirplaneMode ? 'bg-orange-500 justify-end' : 'bg-neutral-800 justify-start'
-                          }`}
-                        >
-                          <span className="w-3 h-3 rounded-full bg-white shadow-sm block" />
-                        </button>
-                      </div>
-
-                      {/* Quick Testing Actions */}
-                      <div className="grid grid-cols-2 gap-1 pt-0.5">
-                        <button
-                          onClick={triggerBluetoothIndicator}
-                          className="px-2 py-1 rounded bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-[9px] text-indigo-300 font-medium flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm"
-                          title="Blinks Bluetooth Icon for 5s and vanishes"
-                        >
-                          <span>📶</span>
-                          <span>Ping BT (5s)</span>
-                        </button>
-
-                        <button
-                          onClick={toggleLowBatterySim}
-                          className={`px-2 py-1 rounded border text-[9px] font-medium flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm ${
-                            isLowBattery
-                              ? 'bg-rose-500/20 border-rose-500/50 text-rose-300'
-                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
-                          }`}
-                          title="Toggle Low Battery Warning (<20%)"
-                        >
-                          <span>🪫</span>
-                          <span>{isLowBattery ? 'Low Batt ON' : 'Test Batt Low'}</span>
-                        </button>
-
-                        <button
-                          onClick={toggleChargingSim}
-                          className={`col-span-2 px-2 py-1 rounded border text-[9px] font-medium flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm ${
-                            isBatteryCharging
-                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
-                          }`}
-                          title="Toggle AC Power / Battery Charging Indicator"
-                        >
-                          <span>⚡</span>
-                          <span>{isBatteryCharging ? 'AC Charging: ACTIVE' : 'AC Charging: OFF (Test)'}</span>
+                          <span>Bluetooth Settings</span>
+                          <svg className="w-2.5 h-2.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7M7 7h10v10" />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -3226,20 +4267,21 @@ export default function DynamicIsland({
           {isKeyModalOpen && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-2 z-50 rounded-2xl bg-[#111116]/98 backdrop-blur-xl border border-neutral-700 shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-3.5 flex flex-col justify-between animate-fadeIn select-none"
+              className="absolute inset-2 z-[80] rounded-2xl bg-[#0e0f14] border border-neutral-700 shadow-[0_20px_50px_rgba(0,0,0,0.95)] p-3.5 flex flex-col justify-between animate-fadeIn select-none"
+              style={{ backgroundColor: '#0e0f14' }}
             >
               <div>
                 <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                   <span className="text-xs font-bold text-neutral-200 flex items-center gap-1.5">
-                    <span className="text-amber-400">🤖</span>
+                    <IconBot className="w-4 h-4 text-amber-400" />
                     <span>AI Model & Key Settings</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsKeyModalOpen(false)}
-                    className="text-neutral-500 hover:text-white text-xs p-1 cursor-pointer"
+                    className="text-neutral-500 hover:text-white p-1 cursor-pointer flex items-center justify-center"
                   >
-                    ✕
+                    <IconX className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -3247,24 +4289,24 @@ export default function DynamicIsland({
                 <div className="my-2 p-2 rounded-xl bg-neutral-900/90 border border-neutral-800 text-[10px] leading-relaxed">
                   {aiStatus.tier === 'bundled' ? (
                     <div className="text-emerald-400 flex items-center justify-between">
-                      <span className="font-semibold flex items-center gap-1">
-                        <span>⚡</span>
-                        <span>Built-in Gemini 2.5 Flash Active</span>
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <IconZap className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Built-in Gemini Flash Active</span>
                       </span>
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Default</span>
                     </div>
                   ) : aiStatus.tier === 'custom' ? (
                     <div className="text-cyan-400 flex items-center justify-between">
-                      <span className="font-semibold flex items-center gap-1">
-                        <span>✨</span>
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <IconSparkles className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Custom Gemini Key Active</span>
                       </span>
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">Custom</span>
                     </div>
                   ) : (
                     <div className="text-amber-400 flex items-center justify-between">
-                      <span className="font-semibold flex items-center gap-1">
-                        <span>⚠️</span>
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <IconKey className="w-3.5 h-3.5 text-amber-400" />
                         <span>No Default Key Bundled Yet</span>
                       </span>
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">Setup</span>
@@ -3347,7 +4389,7 @@ export default function DynamicIsland({
             
             {/* 1. EYELAND AI VIEW - CONVERSATIONAL LLM INTERFACE */}
             {activeTab === 'ai' && (
-              <div className="flex flex-col justify-between h-full overflow-hidden select-none">
+              <div className="flex flex-col justify-between h-full overflow-hidden select-none animate-tabSlide">
                 {/* Chat Header Bar */}
                 <div className="flex items-center justify-between pb-1 px-1 border-b border-neutral-800/80 shrink-0">
                   <div className="flex items-center gap-1.5">
@@ -3363,7 +4405,13 @@ export default function DynamicIsland({
                       }`}
                       title="AI Model & Key Settings"
                     >
-                      <span>{aiStatus.tier === 'bundled' ? '⚡' : aiStatus.tier === 'custom' ? '✨' : '🔑'}</span>
+                      {aiStatus.tier === 'bundled' ? (
+                        <IconZap className="w-3 h-3 text-emerald-400" />
+                      ) : aiStatus.tier === 'custom' ? (
+                        <IconSparkles className="w-3 h-3 text-cyan-400" />
+                      ) : (
+                        <IconKey className="w-3 h-3 text-amber-400" />
+                      )}
                       <span>{aiStatus.activeModel || 'gemini-3.5-flash'}</span>
                     </button>
                     <span className="text-[9px] text-neutral-500 font-mono">
@@ -3379,7 +4427,7 @@ export default function DynamicIsland({
                         className="px-2 py-0.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-rose-300 text-[9px] font-mono flex items-center gap-1 border border-neutral-800 transition-colors cursor-pointer"
                         title="Clear conversation and start new thread"
                       >
-                        <span>🗑️</span>
+                        <IconTrash className="w-3 h-3 text-neutral-400" />
                         <span>New Chat</span>
                       </button>
                     )}
@@ -3391,7 +4439,7 @@ export default function DynamicIsland({
                   /* Hero Welcome State */
                   <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center my-auto px-2">
                     <div 
-                      onClick={triggerRejoice}
+                        onClick={triggerRejoice}
                       title="Click to Pet Eyeland!"
                       className="cursor-pointer mb-1 transform hover:scale-105 active:scale-95 transition-transform"
                     >
@@ -3418,23 +4466,23 @@ export default function DynamicIsland({
                       <button
                         type="button"
                         onClick={() => { setAiInput('Explain this in detail: '); inputRef.current?.focus(); }}
-                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span className="text-sky-400 font-bold">💡</span>
+                        <IconLightbulb className="w-3 h-3 text-sky-400 shrink-0" />
                         <span>Explain</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => { setAiInput('Rewrite and polish this professionally: '); inputRef.current?.focus(); }}
-                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span className="text-emerald-400 font-bold">✨</span>
+                        <IconSparkles className="w-3 h-3 text-emerald-400 shrink-0" />
                         <span>Polish</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => { setAiInput('Summarize the key takeaways and next steps: '); inputRef.current?.focus(); }}
-                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
                         <span className="text-purple-400 font-bold">≡</span>
                         <span>Summarize</span>
@@ -3442,17 +4490,17 @@ export default function DynamicIsland({
                       <button
                         type="button"
                         onClick={() => { setAiInput('Diagnose and fix bugs in this code: '); inputRef.current?.focus(); }}
-                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9.5px] text-neutral-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span className="text-amber-400 font-bold">🛠️</span>
+                        <IconCode className="w-3 h-3 text-amber-400 shrink-0" />
                         <span>Fix Code</span>
                       </button>
                       <button
                         type="button"
                         onClick={handleTriggerChatSnip}
-                        className="px-2.5 py-1 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-[9.5px] text-sky-300 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-[9.5px] text-sky-300 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span className="text-sky-400 font-bold">📸</span>
+                        <IconCamera className="w-3 h-3 text-sky-400 shrink-0" />
                         <span>Snip Screen</span>
                       </button>
                     </div>
@@ -3463,7 +4511,7 @@ export default function DynamicIsland({
                     {chatMessages.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-slideUp`}
                       >
                         {msg.role === 'user' ? (
                           /* USER MESSAGE (RIGHT SIDE) */
@@ -3484,7 +4532,7 @@ export default function DynamicIsland({
                           /* ASSISTANT MESSAGE (LEFT SIDE) */
                           <div className="flex items-start gap-2 max-w-[88%]">
                             <div className="w-5 h-5 rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                              <span className="text-[10px]">🤖</span>
+                              <IconBot className="w-3 h-3 text-neutral-300" />
                             </div>
                             <div className="flex flex-col">
                               <div className="bg-[#141418]/95 border border-neutral-800 text-neutral-200 rounded-2xl rounded-tl-xs px-3.5 py-2.5 text-[11px] leading-relaxed shadow-md select-text break-words">
@@ -3497,10 +4545,10 @@ export default function DynamicIsland({
                                 <button
                                   type="button"
                                   onClick={() => handleCopyMessage(msg.id, msg.text)}
-                                  className="text-neutral-400 hover:text-emerald-400 transition-colors ml-1 cursor-pointer flex items-center gap-0.5"
+                                  className="text-neutral-400 hover:text-emerald-400 transition-colors ml-1 cursor-pointer flex items-center gap-1"
                                   title="Copy response to clipboard"
                                 >
-                                  <span>{copiedMsgId === msg.id ? '✓' : '📋'}</span>
+                                  {copiedMsgId === msg.id ? <IconCheck className="w-3 h-3 text-emerald-400" /> : <IconCopy className="w-3 h-3 text-neutral-400" />}
                                   <span>{copiedMsgId === msg.id ? 'Copied!' : 'Copy'}</span>
                                 </button>
                               </div>
@@ -3512,12 +4560,12 @@ export default function DynamicIsland({
 
                     {/* Thinking / Streaming Indicator */}
                     {isAiResponding && (
-                      <div className="flex items-start gap-2 max-w-[85%] animate-pulse">
+                      <div className="flex items-start gap-2 max-w-[85%] animate-slideUp">
                         <div className="w-5 h-5 rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="text-[10px]">🤖</span>
+                          <IconBot className="w-3 h-3 text-neutral-300" />
                         </div>
                         <div className="bg-[#141418]/95 border border-neutral-800 text-neutral-400 rounded-2xl rounded-tl-xs px-3.5 py-2 text-[10.5px] flex items-center gap-2">
-                          <span className="text-emerald-400 animate-spin">✦</span>
+                          <IconSparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin shrink-0" />
                           <span>Eyeland is thinking...</span>
                         </div>
                       </div>
@@ -3533,7 +4581,7 @@ export default function DynamicIsland({
                       <img src={attachedMedia} alt="Staged media" className="w-9 h-9 object-cover rounded-lg border border-neutral-700" />
                       <div className="flex flex-col text-left">
                         <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
-                          <span>📸</span>
+                          <IconCamera className="w-3 h-3 text-emerald-400" />
                           <span>Screen Snip Attached</span>
                         </span>
                         <span className="text-[8.5px] text-neutral-400">Gemini vision multimodal ready</span>
@@ -3542,10 +4590,10 @@ export default function DynamicIsland({
                     <button
                       type="button"
                       onClick={() => setAttachedMedia(null)}
-                      className="p-1 text-neutral-400 hover:text-white text-xs cursor-pointer"
+                      className="p-1 text-neutral-400 hover:text-white cursor-pointer flex items-center justify-center"
                       title="Remove attachment"
                     >
-                      ✕
+                      <IconX className="w-3 h-3" />
                     </button>
                   </div>
                 )}
@@ -3572,7 +4620,7 @@ export default function DynamicIsland({
                         title="Snip any region on your screen and attach (+ crosshair)"
                         className="p-1 rounded-full hover:bg-neutral-800 hover:text-sky-300 transition-colors cursor-pointer active:scale-95"
                       >
-                        <span className="text-xs">📸</span>
+                        <IconCamera className="w-3.5 h-3.5 text-sky-400" />
                       </button>
 
                       {/* Attach Image File */}
@@ -3582,7 +4630,7 @@ export default function DynamicIsland({
                         title="Upload image from computer"
                         className="p-1 rounded-full hover:bg-neutral-800 hover:text-emerald-300 transition-colors cursor-pointer active:scale-95"
                       >
-                        <span className="text-xs">📎</span>
+                        <IconPaperclip className="w-3.5 h-3.5 text-emerald-400" />
                       </button>
 
                       {/* Paste Clipboard */}
@@ -3592,7 +4640,7 @@ export default function DynamicIsland({
                         title="Paste text from clipboard"
                         className="p-1 rounded-full hover:bg-neutral-800 hover:text-amber-300 transition-colors cursor-pointer active:scale-95"
                       >
-                        <span className="text-xs">📋</span>
+                        <IconClipboard className="w-3.5 h-3.5 text-amber-400" />
                       </button>
                     </div>
 
@@ -3654,10 +4702,10 @@ export default function DynamicIsland({
 
             {/* 1.5. REVOLUTIONARY MULTIMODAL AI TOOLS & SNIPPING SUITE */}
             {activeTab === 'features' && (
-              <div className="flex flex-col h-full animate-fadeIn select-none p-1 overflow-hidden">
-                {/* Header: Title / Back Navigation & Quick Ingest Triggers */}
+              <div className="flex flex-col h-full animate-tabSlide select-none p-1 overflow-hidden">
+                {/* Header: Title / Back Navigation & Quick Ingest */}
                 <div className="flex items-center justify-between text-xs pb-1.5 border-b border-neutral-800/80 mb-1 flex-shrink-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {activeFeatureTool ? (
                       <button
                         type="button"
@@ -3665,331 +4713,175 @@ export default function DynamicIsland({
                           setActiveFeatureTool(null);
                           setFeatureResult(null);
                         }}
-                        className="px-2 py-0.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[9.5px] font-mono text-emerald-400 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                        className="px-2 py-0.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 border border-neutral-750 text-[10px] text-neutral-200 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                       >
                         <span>←</span>
-                        <span>All Tools</span>
+                        <span>Tools</span>
                       </button>
                     ) : (
-                      <span className="font-semibold text-neutral-200 flex items-center gap-1.5 text-[11px]">
-                        <span className="text-amber-400">✱</span>
-                        <span>AI NEURAL SUITE</span>
+                      <span className="font-semibold text-neutral-200 text-[11.5px] tracking-tight">
+                        Tools
                       </span>
                     )}
-
-                    <button
-                      type="button"
-                      onClick={() => setIsKeyModalOpen(true)}
-                      className={`text-[8.5px] font-mono px-2 py-0.5 rounded-full border transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
-                        aiStatus.tier === 'bundled'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                          : aiStatus.tier === 'custom'
-                          ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 animate-pulse'
-                      }`}
-                      title="Click to view AI Model settings"
-                    >
-                      <span>{aiStatus.tier === 'bundled' ? '⚡' : aiStatus.tier === 'custom' ? '✨' : '🔑'}</span>
-                      <span>
-                        {aiStatus.tier === 'bundled'
-                          ? 'Built-in Gemini'
-                          : aiStatus.tier === 'custom'
-                          ? 'Custom Gemini Pro'
-                          : 'Set Gemini Key'}
-                      </span>
-                    </button>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[9px] font-mono">
+                  <div className="flex items-center gap-1.5 text-[9.5px]">
                     <button
                       type="button"
                       onClick={() => handleTriggerSnip(activeFeatureTool || 'explain')}
-                      className="px-2 py-0.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
-                      title="Transform cursor to + crosshair to snip any region on your display"
+                      className="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      title="Transform cursor to crosshair to snip any screen area"
                     >
-                      <span className="text-sky-400 font-bold">+</span>
+                      <IconSnipping className="w-3 h-3 text-sky-400" />
                       <span>Snip Screen</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleTriggerFromClipboard(activeFeatureTool || 'explain')}
-                      className="px-2 py-0.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      className="px-2.5 py-1 rounded-lg bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                       title="Analyze current text on clipboard"
                     >
-                      <span>📋</span>
-                      <span className="hidden sm:inline">From</span>
+                      <IconClipboard className="w-3 h-3 text-amber-400" />
                       <span>Clipboard</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Main Body: Loading Scanner vs Result Card vs Tools Launcher */}
+                {/* Main Body: Loading Scanner vs Result Card vs Tool Workspace vs Tools Launcher */}
                 {featureLoading ? (
                   <div className="flex-1 flex flex-col items-center justify-center p-3 text-center rounded-2xl bg-neutral-900/40 border border-neutral-800/60 my-auto">
                     <div className="relative w-12 h-12 flex items-center justify-center mb-2">
                       <div className="absolute inset-0 rounded-full border-2 border-dashed border-sky-400/60 animate-spin" />
                       <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-300 text-sm animate-pulse">
-                        ✦
+                        <IconSparkles className="w-4 h-4 text-sky-300" />
                       </div>
                     </div>
                     <span className="text-xs font-semibold text-neutral-200 mb-0.5">
-                      Neural Multimodal Scan...
+                      Analyzing...
                     </span>
-                    <span className="text-[9px] font-mono text-neutral-400">
-                      Analyzing selection with Gemini Flash Vision
+                    <span className="text-[9.5px] text-neutral-400">
+                      Processing content directly
                     </span>
                   </div>
                 ) : featureResult ? (
-                  /* Active Tool Result Card */
-                  <div className="flex-1 flex flex-col justify-between overflow-hidden bg-neutral-900/70 border border-neutral-800/90 rounded-2xl p-2.5 my-auto">
-                    {/* Result Header */}
-                    <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80 mb-1 flex-shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold text-neutral-200">
-                          {featureResult.title}
-                        </span>
-                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {featureResult.badge}
+                  /* Clean Minimal AI Result Card - Maximum Vertical Reading Area */
+                  <div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden bg-neutral-900/60 border border-neutral-800/80 rounded-2xl p-2.5 my-auto animate-slideUp">
+                    {/* Minimal Clean Result Header */}
+                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/70 mb-1 flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveFeatureTool(null);
+                            setFeatureResult(null);
+                          }}
+                          className="px-2 py-0.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 border border-neutral-750 text-[9.5px] text-neutral-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <span>←</span>
+                          <span>Tools</span>
+                        </button>
+                        <span className="text-[11px] font-semibold text-neutral-200 capitalize">
+                          {featureResult.tool === 'code' ? 'Fix Code' : featureResult.tool === 'snip' ? 'Snip & Ask' : featureResult.tool}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-[8.5px] font-mono text-neutral-500">
-                        {featureCropPreview ? (
-                          <span className="flex items-center gap-1 text-sky-400">
-                            <span>✂️</span>
-                            <span>Cropped Region</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-neutral-400">
-                            <span>📋</span>
-                            <span>Clipboard Ingest</span>
-                          </span>
-                        )}
-                      </div>
+                      {/* Tool specific inline actions (Tone selector for Polish / Language selector for Translate) */}
+                      {featureResult.tool === 'polish' ? (
+                        <div className="flex items-center gap-1">
+                          {['professional', 'casual', 'concise'].map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => handleExecuteFeature('polish', { tone: t })}
+                              className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono capitalize transition-all cursor-pointer ${
+                                featureResult.tone === t
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                                  : 'bg-neutral-800/60 text-neutral-400 hover:text-white border border-neutral-700/60'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      ) : featureResult.tool === 'translate' ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSpeakTranslation(featureResult.text || featureResult.translatedText, targetTranslateLang)}
+                            className="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[8.5px] font-mono flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                            title="Listen to pronunciation"
+                          >
+                            <IconVolumeHigh className="w-3 h-3 text-cyan-300" />
+                            <span>Speak</span>
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
 
-                    {/* Result Content Scrollable Area */}
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 text-xs select-text" style={{ scrollbarWidth: 'thin' }}>
-                      {/* 1. EXPLAIN */}
-                      {featureResult.tool === 'explain' && (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-neutral-200 leading-relaxed text-[11px]">
-                            <span className="font-bold text-amber-400 block mb-0.5">💡 In Plain English (ELI5):</span>
-                            {featureResult.eli5}
-                          </div>
-                          <div className="flex flex-col gap-1 px-1">
-                            <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider font-semibold">Key Takeaways:</span>
-                            {featureResult.takeaways?.map((pt, i) => (
-                              <div key={i} className="flex items-start gap-1.5 text-[10px] text-neutral-300">
-                                <span className="text-emerald-400">✓</span>
-                                <span>{pt}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 2. POLISH */}
-                      {featureResult.tool === 'polish' && (
-                        <div className="flex flex-col gap-1.5">
-                          {/* Tone Selector Pills */}
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <span className="text-[8.5px] font-mono text-neutral-500 mr-1">Tone:</span>
-                            {['professional', 'casual', 'concise'].map((t) => (
-                              <button
-                                key={t}
-                                type="button"
-                                onClick={() => handleExecuteFeature('polish', { tone: t })}
-                                className={`px-2 py-0.5 rounded text-[9px] font-mono capitalize transition-all cursor-pointer ${
-                                  featureResult.tone === t
-                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                                    : 'bg-neutral-800/80 text-neutral-400 hover:text-white border border-neutral-700'
-                                }`}
-                              >
-                                {t}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Polished Box */}
-                          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-neutral-100 font-sans leading-relaxed text-[11.5px]">
-                            {featureResult.polished}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 3. TRANSLATE */}
-                      {featureResult.tool === 'translate' && (
-                        <div className="flex flex-col gap-1.5">
-                          {/* Target Lang Switcher */}
-                          <div className="flex items-center gap-1 flex-shrink-0 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                            <span className="text-[8.5px] font-mono text-neutral-500 mr-0.5">To:</span>
-                            {[
-                              { code: 'es', label: 'Spanish' },
-                              { code: 'fr', label: 'French' },
-                              { code: 'de', label: 'German' },
-                              { code: 'ja', label: 'Japanese' },
-                              { code: 'hi', label: 'Hindi' },
-                              { code: 'zh', label: 'Chinese' },
-                            ].map((l) => (
-                              <button
-                                key={l.code}
-                                type="button"
-                                onClick={() => {
-                                  setTargetTranslateLang(l.code);
-                                  handleExecuteFeature('translate', { targetLang: l.code });
-                                }}
-                                className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono transition-all cursor-pointer ${
-                                  featureResult.targetLang?.toLowerCase() === l.label.toLowerCase()
-                                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
-                                    : 'bg-neutral-800/80 text-neutral-400 hover:text-white border border-neutral-700'
-                                }`}
-                              >
-                                {l.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-neutral-100 leading-relaxed text-[11.5px]">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[9px] font-mono text-cyan-400 font-semibold">{featureResult.targetLang} Translation:</span>
-                              <button
-                                type="button"
-                                onClick={() => handleSpeakTranslation(featureResult.translatedText, targetTranslateLang)}
-                                className="px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[8.5px] font-mono flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                                title="Listen to pronunciation"
-                              >
-                                <span>🔊</span>
-                                <span>Speak</span>
-                              </button>
-                            </div>
-                            <div className="font-medium text-white mb-1">{featureResult.translatedText}</div>
-                            {featureResult.phonetic && (
-                              <div className="text-[9.5px] font-mono text-neutral-400 italic">
-                                Pronunciation: {featureResult.phonetic}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 4. SUMMARIZE */}
-                      {featureResult.tool === 'summarize' && (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-neutral-200 leading-relaxed text-[11px]">
-                            <span className="font-bold text-purple-400 block mb-0.5">⚡ Executive TL;DR:</span>
-                            {featureResult.tldr}
-                          </div>
-
-                          {featureResult.actionTasks && (
-                            <div className="p-1.5 rounded-xl bg-neutral-900/90 border border-neutral-800 flex flex-col gap-1">
-                              <div className="flex items-center justify-between text-[8.5px] font-mono text-neutral-400">
-                                <span>ACTION TASKS EXTRACTED:</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSendTasksToScratchpad(featureResult.actionTasks)}
-                                  className="text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
-                                >
-                                  {featureSavedNote ? '✓ Sent to Tasks!' : 'Send to Scratchpad Tasks →'}
-                                </button>
-                              </div>
-                              {featureResult.actionTasks.map((t, idx) => (
-                                <div key={idx} className="text-[9.5px] font-mono text-neutral-300 flex items-center gap-1">
-                                  <span>{t}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* 5. FIX CODE */}
-                      {featureResult.tool === 'code' && (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="p-1.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] font-mono leading-tight">
-                            <span className="font-bold block text-rose-400">Bug Identified:</span>
-                            {featureResult.rootCause}
-                          </div>
-
-                          <div className="p-2 rounded-xl bg-[#0b0b0e] border border-neutral-800 font-mono text-[10px] text-emerald-400 leading-relaxed overflow-x-auto whitespace-pre">
-                            {featureResult.fixedCode}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 6. SNIP & ASK */}
-                      {featureResult.tool === 'snip' && (
-                        <div className="flex flex-col gap-1.5">
-                          {featureCropPreview && (
-                            <div className="flex items-center gap-2 p-1 bg-black/40 rounded-lg border border-neutral-800">
-                              <img
-                                src={featureCropPreview}
-                                alt="Crop preview"
-                                className="w-24 h-12 object-contain rounded border border-neutral-700"
-                              />
-                              <div className="text-[9px] font-mono text-neutral-400">
-                                <div>Selection captured</div>
-                                <div className="text-emerald-400">High-DPI OCR Complete</div>
-                              </div>
-                            </div>
-                          )}
-                          <div className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-[11px] text-neutral-200">
-                            {featureResult.analysis}
-                          </div>
-                        </div>
-                      )}
+                    {/* Result Content Scrollable Reading Area - Maximized vertical space */}
+                    <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 flex flex-col gap-1 text-xs select-text" style={{ scrollbarWidth: 'thin' }}>
+                      <div className="bg-[#0b0b0e] border border-neutral-800/80 rounded-xl p-3 text-[11px] leading-relaxed text-neutral-200 break-words shadow-inner">
+                        {renderFormattedMessage(featureResult.text || featureResult.eli5 || featureResult.polished || featureResult.translatedText || featureResult.tldr || featureResult.fixedCode || featureResult.analysis || '')}
+                      </div>
                     </div>
 
                     {/* Result Action Buttons Footer */}
-                    <div className="flex items-center justify-between pt-1.5 border-t border-neutral-800/80 mt-1 flex-shrink-0 text-[9px] font-mono">
+                    <div className="flex items-center justify-between pt-1.5 border-t border-neutral-800/70 mt-1 flex-shrink-0 text-[9.5px] font-mono">
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
-                            const textToCopy =
-                              featureResult.polished ||
-                              featureResult.translatedText ||
-                              featureResult.fixedCode ||
-                              featureResult.eli5 ||
-                              featureResult.tldr ||
-                              '';
+                            const textToCopy = featureResult.text || featureResult.polished || featureResult.translatedText || featureResult.fixedCode || featureResult.eli5 || featureResult.tldr || '';
                             handleCopyFeatureResult(textToCopy);
                           }}
-                          className={`px-2 py-0.5 rounded-lg border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                          className={`px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                             featureCopied
                               ? 'bg-emerald-500 text-black border-emerald-400 font-bold'
                               : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
                           }`}
                         >
-                          <span>{featureCopied ? '✓' : '📋'}</span>
-                          <span>{featureCopied ? 'Copied!' : 'Copy Result'}</span>
+                          {featureCopied ? <IconCheck className="w-3 h-3 text-black" /> : <IconCopy className="w-3 h-3 text-neutral-300" />}
+                          <span>{featureCopied ? 'Copied' : 'Copy'}</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => {
-                            const note =
-                              featureResult.tldr ||
-                              featureResult.eli5 ||
-                              featureResult.fixedCode ||
-                              featureResult.translatedText ||
-                              '';
+                            const note = featureResult.text || featureResult.tldr || featureResult.eli5 || featureResult.fixedCode || featureResult.translatedText || '';
                             handleSaveFeatureToScratchpad(note, 'general');
                           }}
-                          className="px-2 py-0.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-white transition-all cursor-pointer active:scale-95"
+                          className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1"
                         >
-                          {featureSavedNote ? '✓ Saved!' : '📝 Save Note'}
+                          {featureSavedNote ? <IconCheck className="w-3 h-3 text-emerald-400" /> : <IconNotes className="w-3 h-3 text-neutral-300" />}
+                          <span>{featureSavedNote ? 'Saved' : 'Save Note'}</span>
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        {featureResult.isNetworkError && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleExecuteFeature(activeFeatureTool || 'explain', {
+                                sourceType: featureSourceType,
+                                dataUrl: featureCropPreview,
+                                bounds: featureCropBounds,
+                              });
+                            }}
+                            className="text-amber-400 hover:text-amber-300 font-semibold hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
+                            <IconRefresh className="w-3 h-3 text-amber-400" />
+                            <span>Retry</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleTriggerSnip(activeFeatureTool)}
-                          className="text-sky-400 hover:text-sky-300 hover:underline cursor-pointer"
+                          className="text-sky-400 hover:text-sky-300 hover:underline cursor-pointer flex items-center gap-1"
                         >
-                          + Snip Again
+                          <IconSnipping className="w-3 h-3 text-sky-400" />
+                          <span>Snip Again</span>
                         </button>
                         <span className="text-neutral-600">•</span>
                         <button
@@ -4000,25 +4892,95 @@ export default function DynamicIsland({
                           }}
                           className="text-neutral-400 hover:text-white hover:underline cursor-pointer"
                         >
-                          Close
+                          Done
                         </button>
                       </div>
                     </div>
                   </div>
+                ) : activeFeatureTool ? (
+                  /* Interactive Tool Input Workspace (Opens inside the island without closing it!) */
+                  <div className="flex-1 flex flex-col justify-between p-2 rounded-2xl bg-neutral-900/70 border border-neutral-800/90 my-auto overflow-hidden">
+                    <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80 mb-1 flex-shrink-0">
+                      <span className="text-[11px] font-semibold text-neutral-200 capitalize">
+                        {activeFeatureTool === 'code' ? 'Fix Code' : activeFeatureTool === 'snip' ? 'Snip & Ask' : activeFeatureTool}
+                      </span>
+                      <span className="text-[8.5px] font-mono text-neutral-400">
+                        Type, paste or snip to run
+                      </span>
+                    </div>
+
+                    <div className="flex-1 min-h-[46px] flex flex-col mb-1.5">
+                      <textarea
+                        value={featureInputText}
+                        onChange={(e) => setFeatureInputText(e.target.value)}
+                        placeholder={
+                          activeFeatureTool === 'explain'
+                            ? 'Type or paste what you want explained in simple terms...'
+                            : activeFeatureTool === 'translate'
+                            ? 'Type or paste text to translate...'
+                            : activeFeatureTool === 'summarize'
+                            ? 'Type or paste text or article to summarize...'
+                            : activeFeatureTool === 'code'
+                            ? 'Paste code or error stack trace to debug...'
+                            : 'Type or paste text to refine and polish...'
+                        }
+                        className="w-full flex-1 p-2 rounded-xl bg-neutral-950/80 border border-neutral-800 focus:border-sky-500/50 text-[11px] text-neutral-200 placeholder:text-neutral-500 outline-none resize-none font-sans"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-neutral-800/70 text-[9px] font-mono flex-shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerSnip(activeFeatureTool)}
+                          className="px-2 py-0.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                        >
+                          <IconSnipping className="w-3 h-3 text-sky-400" />
+                          <span>Snip Screen</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerFromClipboard(activeFeatureTool)}
+                          className="px-2 py-0.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                        >
+                          <IconClipboard className="w-3 h-3 text-neutral-300" />
+                          <span>From Clipboard</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!featureInputText.trim()}
+                        onClick={() => {
+                          if (featureInputText.trim()) {
+                            handleExecuteFeature(activeFeatureTool, {
+                              sourceType: 'custom',
+                              text: featureInputText.trim(),
+                            });
+                          }
+                        }}
+                        className={`px-3 py-0.5 rounded-lg font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                          featureInputText.trim()
+                            ? 'bg-emerald-400 text-neutral-950 hover:bg-emerald-300 shadow-sm'
+                            : 'bg-neutral-800/60 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+                        }`}
+                      >
+                        <span>Analyze</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  /* 6-Tool Launcher Grid (Fitted Perfectly with Zero Overflow) */
+                  /* 6-Tool Launcher Grid (Clean & Minimal) */
                   <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-2 gap-2 my-auto py-0.5">
                     {/* Tool 1: Explain */}
                     <div
-                      onClick={() => handleTriggerSnip('explain')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-sky-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('explain')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-sky-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">💡</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-semibold">
-                          SNIP
-                        </span>
-                      </div>
+                      <IconLightbulb className="w-5 h-5 text-sky-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Explain
@@ -4031,15 +4993,10 @@ export default function DynamicIsland({
 
                     {/* Tool 2: Polish & Grammar */}
                     <div
-                      onClick={() => handleTriggerFromClipboard('polish')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-emerald-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('polish')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-emerald-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">✨</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
-                          CLIPBOARD
-                        </span>
-                      </div>
+                      <IconSparkles className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Polish
@@ -4052,15 +5009,10 @@ export default function DynamicIsland({
 
                     {/* Tool 3: Translate */}
                     <div
-                      onClick={() => handleTriggerSnip('translate')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-cyan-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('translate')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-cyan-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">🌐</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-semibold">
-                          SNIP
-                        </span>
-                      </div>
+                      <IconGlobe className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Translate
@@ -4073,15 +5025,10 @@ export default function DynamicIsland({
 
                     {/* Tool 4: Summarize */}
                     <div
-                      onClick={() => handleTriggerSnip('summarize')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-purple-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('summarize')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-purple-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">≡</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 font-semibold">
-                          SNIP
-                        </span>
-                      </div>
+                      <IconFileText className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Summarize
@@ -4094,15 +5041,10 @@ export default function DynamicIsland({
 
                     {/* Tool 5: Fix Code */}
                     <div
-                      onClick={() => handleTriggerFromClipboard('code')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-amber-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('code')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-amber-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">🛠️</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold">
-                          CLIPBOARD
-                        </span>
-                      </div>
+                      <IconCode className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Fix Code
@@ -4115,15 +5057,10 @@ export default function DynamicIsland({
 
                     {/* Tool 6: Snip & Ask */}
                     <div
-                      onClick={() => handleTriggerSnip('snip')}
-                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-rose-500/50 flex flex-col justify-between transition-all active:scale-95 group shadow-sm cursor-pointer select-none"
+                      onClick={() => handleSelectTool('snip')}
+                      className="px-2.5 py-2 rounded-xl bg-[#111116] hover:bg-[#181822] border border-neutral-800/90 hover:border-rose-500/50 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.6)] active:scale-95 group shadow-sm cursor-pointer select-none"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm group-hover:scale-110 transition-transform">✂️</span>
-                        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 font-semibold">
-                          VISION
-                        </span>
-                      </div>
+                      <IconSnipping className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />
                       <div className="mt-0.5">
                         <span className="text-[11px] font-semibold text-neutral-100 group-hover:text-white block leading-tight">
                           Snip & Ask
@@ -4140,10 +5077,13 @@ export default function DynamicIsland({
 
             {/* 2. FUTURISTIC REDESIGNED HOME TAB (Sci-Fi Cockpit & Real Hardware Telemetry) */}
             {activeTab === 'home' && (
-              <div className="flex items-center justify-between gap-3 h-full animate-fadeIn select-none">
+              <div className="flex items-center justify-between gap-3 h-full animate-tabSlide select-none">
                 
                 {/* LEFT WING: BIO-QUANTUM NEURAL REACTOR */}
-                <div className="w-[145px] h-full flex flex-col items-center justify-between py-1 px-1 bg-gradient-to-b from-[#121217] to-[#09090c] rounded-2xl border border-neutral-800/90 relative overflow-hidden group shadow-inner">
+                <div
+                  className={`w-[145px] h-full flex flex-col items-center justify-between py-1 px-1 bg-gradient-to-b from-[#121217] to-[#09090c] rounded-2xl border border-neutral-800/90 relative overflow-hidden group shadow-inner ${isWakingUp ? 'pop-in-card' : ''}`}
+                  style={{ '--i': 1 }}
+                >
                   {/* Ambient breathing radial aura */}
                   <div
                     className="absolute inset-0 pointer-events-none opacity-20"
@@ -4151,46 +5091,35 @@ export default function DynamicIsland({
                   />
 
                   {/* Top Header Tag */}
-                  <div className="flex items-center gap-1.5 z-10 pt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-                    <span className="text-[8px] font-mono tracking-widest text-neutral-400 uppercase">BIO-CORE</span>
+                  <div className="flex items-center gap-1.5 z-10 pt-0.5 max-w-[130px] px-1">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
+                      style={{
+                        backgroundColor: theme.accent || theme.color,
+                        boxShadow: `0 0 8px ${theme.accent || theme.color}`,
+                      }}
+                    />
+                    <span
+                      className="text-[8px] font-mono tracking-widest text-neutral-300 uppercase truncate"
+                      title={companionName || 'Bio-Core'}
+                    >
+                      {companionName || 'Bio-Core'}
+                    </span>
                   </div>
 
-                  {/* Interactive Reactor with Orbital Cyber Rings & Living Eyes */}
-                  <div
-                    onClick={triggerRejoice}
-                    title="Click to Pet Eyeland Neural Core!"
-                    className="relative w-20 h-20 flex items-center justify-center cursor-pointer my-auto transform hover:scale-105 active:scale-95 transition-all"
-                  >
-                    {/* Ambient Core Breathing Glow */}
-                    <div
-                      className="absolute w-14 h-14 rounded-full blur-md opacity-30 pointer-events-none radar-breath"
-                      style={{ backgroundColor: theme.color }}
+                  {/* Interactive Reactor with Selected Companion Core Design & Living Eyes */}
+                  <div className="my-auto">
+                    <CompanionCoreAvatar
+                      design={companionDesign}
+                      theme={theme}
+                      expression={activeEyeExpression}
+                      eyeTracking={eyeTracking}
+                      eyeColor={activeEyeColor}
+                      eyeShadow={activeEyeShadow}
+                      size="sm"
+                      onClick={triggerRejoice}
+                      title={`Click to Pet ${companionName || 'Bio-Core'}!`}
                     />
-                    
-                    {/* Outer Rotating Cyber Ring */}
-                    <svg className="absolute inset-0 w-full h-full cyber-orbit pointer-events-none opacity-40 text-emerald-400" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 8 20 6" />
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4 6 12 6" />
-                    </svg>
-
-                    {/* Counter-rotating Inner Ring */}
-                    <svg className="absolute inset-0 w-full h-full cyber-orbit-fast pointer-events-none opacity-30 text-cyan-400" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="6 14 6 14" />
-                    </svg>
-
-                    {/* Centered Living Pearl Eyes */}
-                    <div className="relative z-10 pointer-events-none">
-                      <MinimalEyes
-                        tiltDeg={eyeTracking.tiltDeg}
-                        offsetX={eyeTracking.offsetX}
-                        offsetY={eyeTracking.offsetY}
-                        expression={activeEyeExpression}
-                        themeColor={activeEyeColor}
-                        themeShadow={activeEyeShadow}
-                        size="md"
-                      />
-                    </div>
                   </div>
 
                   {/* Core Pet Action & Flow Status */}
@@ -4199,10 +5128,15 @@ export default function DynamicIsland({
                       onClick={triggerRejoice}
                       className="px-2.5 py-0.5 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700/80 text-[9px] text-neutral-300 hover:text-white flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                     >
-                      <span>❤️</span>
-                      <span className="font-medium">Pet Buddy</span>
+                      <IconSupport className="w-3 h-3 text-rose-400" />
+                      <span className="font-medium">{t.petBuddy}</span>
                     </button>
-                    <span className="text-[7.5px] font-mono text-emerald-400/90 pt-0.5">SYNC 100% • 60 FPS</span>
+                    <span
+                      className="text-[7.5px] font-mono pt-0.5 opacity-90 transition-colors duration-300"
+                      style={{ color: theme.accent || theme.color }}
+                    >
+                      SYNC 100% • 60 FPS
+                    </span>
                   </div>
                 </div>
 
@@ -4213,20 +5147,23 @@ export default function DynamicIsland({
                   <div className="grid grid-cols-2 gap-1.5 flex-1">
                     
                     {/* CARD 1: CPU NEURAL ENGINE (Real Device Data) */}
-                    <div className="p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-colors shadow-sm">
+                    <div
+                      className={`p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isWakingUp ? 'pop-in-card' : ''}`}
+                      style={{ '--i': 2 }}
+                    >
                       <div className="flex items-center justify-between text-[9px]">
                         <span className="flex items-center gap-1 font-semibold text-neutral-300">
-                          <span className="text-cyan-400">⚡</span>
+                          <IconCpu className="w-3 h-3 text-cyan-400" />
                           <span>CPU LOAD</span>
                         </span>
                         <span className="font-mono text-cyan-400 font-bold text-[10px]">
-                          {telemetry.cpu?.loadPercent || 12}%
+                          {Math.round((telemetry.cpu?.loadPercent || 12) * telemetryAnimProgress)}%
                         </span>
                       </div>
                       <div className="w-full bg-neutral-850 h-1.5 rounded-full my-1 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500"
-                          style={{ width: `${Math.max(6, telemetry.cpu?.loadPercent || 12)}%` }}
+                          style={{ width: `${Math.max(6, Math.round((telemetry.cpu?.loadPercent || 12) * telemetryAnimProgress))}%` }}
                         />
                       </div>
                       <div className="flex items-center justify-between text-[8px] font-mono text-neutral-400 truncate">
@@ -4238,20 +5175,23 @@ export default function DynamicIsland({
                     </div>
 
                     {/* CARD 2: QUANTUM MEMORY (Real Device RAM) */}
-                    <div className="p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-colors shadow-sm">
+                    <div
+                      className={`p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isWakingUp ? 'pop-in-card' : ''}`}
+                      style={{ '--i': 3 }}
+                    >
                       <div className="flex items-center justify-between text-[9px]">
                         <span className="flex items-center gap-1 font-semibold text-neutral-300">
-                          <span className="text-purple-400">🧠</span>
+                          <IconRam className="w-3 h-3 text-purple-400" />
                           <span>MEMORY</span>
                         </span>
                         <span className="font-mono text-purple-400 font-bold text-[10px]">
-                          {telemetry.memory?.percent || 82}%
+                          {Math.round((telemetry.memory?.percent || 82) * telemetryAnimProgress)}%
                         </span>
                       </div>
                       <div className="w-full bg-neutral-850 h-1.5 rounded-full my-1 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-400 transition-all duration-500"
-                          style={{ width: `${telemetry.memory?.percent || 82}%` }}
+                          style={{ width: `${Math.round((telemetry.memory?.percent || 82) * telemetryAnimProgress)}%` }}
                         />
                       </div>
                       <div className="flex items-center justify-between text-[8px] font-mono text-neutral-400">
@@ -4261,20 +5201,23 @@ export default function DynamicIsland({
                     </div>
 
                     {/* CARD 3: REAL WLAN LINK (Real Wi-Fi Data) */}
-                    <div className="p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-colors shadow-sm">
+                    <div
+                      className={`p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isWakingUp ? 'pop-in-card' : ''}`}
+                      style={{ '--i': 4 }}
+                    >
                       <div className="flex items-center justify-between text-[9px]">
                         <span className="flex items-center gap-1 font-semibold text-neutral-300 truncate">
-                          <span className="text-sky-400">📶</span>
+                          <IconWifi className="w-3 h-3 text-sky-400 shrink-0" />
                           <span className="truncate max-w-[85px]" title={currentWifi}>{currentWifi}</span>
                         </span>
                         <span className="font-mono text-sky-400 font-bold text-[10px]">
-                          {telemetry.wifi?.signal || 80}%
+                          {Math.round((telemetry.wifi?.signal || 80) * telemetryAnimProgress)}%
                         </span>
                       </div>
                       <div className="w-full bg-neutral-850 h-1.5 rounded-full my-1 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
-                          style={{ width: `${telemetry.wifi?.signal || 80}%` }}
+                          style={{ width: `${Math.round((telemetry.wifi?.signal || 80) * telemetryAnimProgress)}%` }}
                         />
                       </div>
                       <div className="flex items-center justify-between text-[8px] font-mono text-neutral-400 truncate">
@@ -4284,20 +5227,27 @@ export default function DynamicIsland({
                     </div>
 
                     {/* CARD 4: POWER MATRIX (Real Battery & AC Status) */}
-                    <div className="p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-colors shadow-sm">
+                    <div
+                      className={`p-2 rounded-xl bg-[#111115]/90 border border-neutral-800/80 hover:border-neutral-700/80 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isWakingUp ? 'pop-in-card' : ''}`}
+                      style={{ '--i': 5 }}
+                    >
                       <div className="flex items-center justify-between text-[9px]">
                         <span className="flex items-center gap-1 font-semibold text-neutral-300">
-                          <span className="text-emerald-400">{telemetry.battery?.isCharging ? '⚡' : '🔋'}</span>
+                          {telemetry.battery?.isCharging ? (
+                            <IconBatteryCharging className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <IconBattery className="w-3 h-3 text-emerald-400" />
+                          )}
                           <span>POWER</span>
                         </span>
                         <span className="font-mono text-emerald-400 font-bold text-[10px]">
-                          {telemetry.battery?.percent || 100}%
+                          {Math.round((telemetry.battery?.percent || 100) * telemetryAnimProgress)}%
                         </span>
                       </div>
                       <div className="w-full bg-neutral-850 h-1.5 rounded-full my-1 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                          style={{ width: `${telemetry.battery?.percent || 100}%` }}
+                          style={{ width: `${Math.round((telemetry.battery?.percent || 100) * telemetryAnimProgress)}%` }}
                         />
                       </div>
                       <div className="flex items-center justify-between text-[8px] font-mono text-neutral-400 truncate">
@@ -4320,9 +5270,15 @@ export default function DynamicIsland({
                           setHardwareLevels((prev) => ({ ...prev, muted: nextMute }));
                         }}
                         title={hardwareLevels.muted ? 'Unmute Audio' : 'Mute Audio'}
-                        className="text-[11px] text-neutral-400 hover:text-white transition-colors flex-shrink-0 cursor-pointer"
+                        className="text-[11px] text-neutral-400 hover:text-white transition-colors flex-shrink-0 cursor-pointer flex items-center justify-center"
                       >
-                        {hardwareLevels.muted || hardwareLevels.volume === 0 ? '🔇' : hardwareLevels.volume < 50 ? '🔉' : '🔊'}
+                        {hardwareLevels.muted || hardwareLevels.volume === 0 ? (
+                          <IconVolumeMute className="w-3.5 h-3.5 text-neutral-400" />
+                        ) : hardwareLevels.volume < 50 ? (
+                          <IconVolumeMid className="w-3.5 h-3.5 text-sky-400" />
+                        ) : (
+                          <IconVolumeHigh className="w-3.5 h-3.5 text-sky-400" />
+                        )}
                       </button>
                       <input
                         type="range"
@@ -4345,7 +5301,7 @@ export default function DynamicIsland({
 
                     {/* Master Brightness Slider */}
                     <div className="flex-1 flex items-center gap-1.5 min-w-0" title={`Screen Brightness: ${hardwareLevels.brightness}%`}>
-                      <span className="text-[11px] text-amber-400 flex-shrink-0">☀️</span>
+                      <IconBrightness className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                       <input
                         type="range"
                         min="0"
@@ -4379,14 +5335,14 @@ export default function DynamicIsland({
                         onClick={() => setActiveTab('ai')}
                         className="px-2 py-0.5 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-[9px] text-emerald-300 font-medium flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                       >
-                        <span>💬</span>
+                        <IconAiChat className="w-3 h-3 text-emerald-300" />
                         <span>Eyeland AI</span>
                       </button>
                       <button
                         onClick={handleScanScreen}
                         className="px-2 py-0.5 rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-[9px] text-neutral-300 flex items-center gap-1 transition-all active:scale-95"
                       >
-                        <span>📸</span>
+                        <IconCamera className="w-3 h-3 text-neutral-300" />
                         <span>Scan</span>
                       </button>
                     </div>
@@ -4400,7 +5356,7 @@ export default function DynamicIsland({
             {/* 3. REDESIGNED HIGH-TECH STAGING SHELF TAB */}
             {activeTab === 'shelf' && (
               <div
-                className={`relative flex flex-col justify-between h-full p-2.5 rounded-2xl transition-all duration-300 select-none overflow-hidden ${
+                className={`relative flex flex-col justify-between h-full p-2.5 rounded-2xl transition-all duration-300 select-none overflow-hidden animate-tabSlide ${
                   isDraggingOver
                     ? 'border-2 border-indigo-400 bg-indigo-500/15 shadow-[0_0_24px_rgba(99,102,241,0.25)]'
                     : 'border border-neutral-800/90 bg-neutral-900/60 backdrop-blur-md'
@@ -4469,7 +5425,7 @@ export default function DynamicIsland({
                       className="px-2 py-0.5 rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-[9px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                       title="Browse and select files to stage"
                     >
-                      <span>📄</span>
+                      <IconFileText className="w-3 h-3 text-neutral-300" />
                       <span>+ File</span>
                     </button>
 
@@ -4479,7 +5435,7 @@ export default function DynamicIsland({
                       className="px-2 py-0.5 rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-[9px] text-neutral-200 flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                       title="Browse and select a folder to stage"
                     >
-                      <span>📁</span>
+                      <IconFolder className="w-3 h-3 text-amber-300" />
                       <span>+ Folder</span>
                     </button>
 
@@ -4490,7 +5446,7 @@ export default function DynamicIsland({
                         className="px-2 py-0.5 rounded-md bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-[9px] text-rose-300 flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                         title="Clear all staged files from shelf"
                       >
-                        <span>✕</span>
+                        <IconX className="w-3 h-3 text-rose-300" />
                         <span>Clear</span>
                       </button>
                     )}
@@ -4509,13 +5465,9 @@ export default function DynamicIsland({
                     >
                       <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center mb-1.5 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
                         {isDraggingOver ? (
-                          <span className="text-lg animate-bounce">📥</span>
+                          <IconDownload className="w-5 h-5 text-indigo-400 animate-bounce" />
                         ) : (
-                          <svg className="w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
+                          <IconDownload className="w-4 h-4 text-indigo-400" />
                         )}
                       </div>
                       <p className="text-[11.5px] font-bold text-neutral-100 tracking-tight">
@@ -4526,10 +5478,10 @@ export default function DynamicIsland({
                       </p>
                       <div className="flex items-center gap-1.5 mt-2">
                         <span className="text-[8px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono">
-                          ⚡ Auto-switches on drag
+                          Auto-switches on drag
                         </span>
                         <span className="text-[8px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono">
-                          🖱️ Drag out to any window
+                          Drag out to any window
                         </span>
                       </div>
                     </div>
@@ -4555,13 +5507,14 @@ export default function DynamicIsland({
                             f.type === 'archive' ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' :
                             'bg-neutral-800 text-neutral-300 border border-neutral-700'
                           }`}>
-                            {f.isFolder ? '📁' :
-                             f.type === 'image' ? '🖼️' :
-                             f.type === 'code' ? '💻' :
-                             f.type === 'pdf' ? '📄' :
-                             f.type === 'audio' ? '🎵' :
-                             f.type === 'video' ? '🎬' :
-                             f.type === 'archive' ? '📦' : '📝'}
+                            {f.isFolder ? <IconFolder className="w-3.5 h-3.5 text-amber-400" /> :
+                             f.type === 'image' ? <IconImage className="w-3.5 h-3.5 text-emerald-400" /> :
+                             f.type === 'code' ? <IconCode className="w-3.5 h-3.5 text-cyan-400" /> :
+                             f.type === 'pdf' ? <IconFileText className="w-3.5 h-3.5 text-rose-400" /> :
+                             f.type === 'audio' ? <IconAudio className="w-3.5 h-3.5 text-purple-400" /> :
+                             f.type === 'video' ? <IconVideo className="w-3.5 h-3.5 text-pink-400" /> :
+                             f.type === 'archive' ? <IconArchive className="w-3.5 h-3.5 text-yellow-400" /> :
+                             <IconFileText className="w-3.5 h-3.5 text-neutral-300" />}
                           </div>
 
                           {/* Name & Metadata */}
@@ -4643,8 +5596,8 @@ export default function DynamicIsland({
 
                 {/* Bottom Footer Row */}
                 <div className="flex items-center justify-between text-[9px] text-neutral-400 font-mono pt-1.5 border-t border-neutral-800/80 flex-shrink-0">
-                  <span className="flex items-center gap-1 truncate text-neutral-400">
-                    <span className="text-indigo-400">💡</span>
+                  <span className="flex items-center gap-1.5 truncate text-neutral-400">
+                    <IconLightbulb className="w-3 h-3 text-indigo-400 shrink-0" />
                     <span className="truncate">Drag any card out to drop into Explorer, Browser, Slack, Word, etc.</span>
                   </span>
 
@@ -4653,10 +5606,10 @@ export default function DynamicIsland({
                       draggable={true}
                       onDragStart={handleDragAllOut}
                       onDragEnd={handleDragItemEnd}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:text-white cursor-grab active:cursor-grabbing font-medium text-[8px] transition-all"
+                      className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:text-white cursor-grab active:cursor-grabbing font-medium text-[8px] transition-all"
                       title="Drag ALL staged files out together"
                     >
-                      <span>📦</span>
+                      <IconArchive className="w-3 h-3 text-indigo-300" />
                       <span>Drag All ({stagedFiles.length})</span>
                     </div>
                   )}
@@ -4664,363 +5617,228 @@ export default function DynamicIsland({
               </div>
             )}
 
-            {/* 4. FUTURISTIC SPOTIFY MUSIC TAB WITH DYNAMIC AMBIENT LIGHTING */}
+            {/* 4. CINEMATIC FULL-BLEED SPLIT MUSIC PLAYER (Artwork Fade + Live Karaoke Lyrics) */}
             {activeTab === 'music' && (
-              <div 
-                className="relative flex flex-col justify-between h-full p-2.5 rounded-2xl overflow-hidden transition-all duration-700 select-none border border-white/10"
-                style={{ background: ambientPalette.radialAura }}
-              >
-                {/* Ambient Breathing Backdrop Light */}
-                <div 
-                  className="absolute -top-10 -left-10 w-44 h-44 rounded-full pointer-events-none blur-3xl ambient-aura-pulse"
-                  style={{ backgroundColor: ambientPalette.rgba(0.3) }}
-                />
-
-                {/* Top Status & Controls Bar */}
-                <div className="relative z-10 flex items-center justify-between text-xs pb-1 border-b border-white/10 flex-shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    {/* Spotify Logo Pill */}
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1db954]/20 border border-[#1db954]/40 text-[#1ed760] font-semibold text-[9px] shadow-[0_0_8px_rgba(29,185,84,0.3)]">
-                      <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.218.358-.684.472-1.042.254-2.857-1.745-6.455-2.14-10.692-1.17-.41.094-.822-.164-.916-.574-.094-.41.164-.822.574-.916 4.636-1.06 8.604-.61 11.822 1.364.358.218.472.684.254 1.042zm1.466-3.262c-.274.446-.856.59-1.302.316-3.27-2.01-8.256-2.592-12.124-1.418-.502.152-1.036-.134-1.188-.636-.152-.502.134-1.036.636-1.188 4.418-1.34 9.914-.686 13.662 1.624.446.274.59.856.316 1.302zm.126-3.41c-3.922-2.328-10.384-2.542-14.134-1.404-.6.182-1.242-.162-1.424-.762-.182-.6.162-1.242.762-1.424 4.31-1.308 11.442-1.054 15.946 1.62.54.32.716 1.024.396 1.564-.32.54-1.024.716-1.564.396z"/>
-                      </svg>
-                      <span>{trackData.isNativeSpotify ? 'SPOTIFY DESKTOP' : 'SPOTIFY'}</span>
-                    </div>
-
-                    {trackData.isNativeSpotify ? (
-                      <span className="flex items-center gap-1 text-[8px] font-mono text-emerald-400 font-semibold px-1.5 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>LIVE SYNC</span>
-                      </span>
-                    ) : (
-                      <span className="text-[8.5px] font-mono text-neutral-400">
-                        {trackData.source || 'Spotify PC'}
-                      </span>
-                    )}
-
-                    {/* Ambient Palette Indicator Pill */}
-                    <div 
-                      className="px-1.5 py-0.2 rounded-full text-[7.5px] font-mono flex items-center gap-1 border"
-                      style={{ 
-                        borderColor: `${ambientPalette.hex}50`, 
-                        backgroundColor: `${ambientPalette.hex}20`,
-                        color: ambientPalette.hex 
-                      }}
-                      title="Dynamic Ambient Poster Hue"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ambientPalette.hex }} />
-                      <span>{ambientPalette.hex.toUpperCase()}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Live Sync / Refresh Spotify Status Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.electronAPI?.refreshLiveMedia?.();
-                      }}
-                      title="Sync with Spotify"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-medium bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-emerald-500/50 text-neutral-300 hover:text-emerald-400 transition-all cursor-pointer active:scale-95 shadow-sm"
-                    >
-                      <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                      </svg>
-                      <span>Sync</span>
-                    </button>
-                  </div>
-                </div>
-
+              <div className="relative flex h-full rounded-2xl overflow-hidden bg-black border border-white/[0.08] select-none animate-tabSlide">
                 {!trackData.title ? (
-                  /* Spotify Idle / No Track Playing View */
-                  <div className="relative z-10 flex flex-col items-center justify-center flex-1 my-auto text-center py-6 px-4">
-                    <div 
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2.5 shadow-[0_0_24px_rgba(29,185,84,0.25)] border"
-                      style={{ 
-                        backgroundColor: 'rgba(29, 185, 84, 0.15)',
-                        borderColor: 'rgba(29, 185, 84, 0.35)'
-                      }}
-                    >
-                      <svg className="w-8 h-8 fill-[#1ed760]" viewBox="0 0 24 24">
-                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.218.358-.684.472-1.042.254-2.857-1.745-6.455-2.14-10.692-1.17-.41.094-.822-.164-.916-.574-.094-.41.164-.822.574-.916 4.636-1.06 8.604-.61 11.822 1.364.358.218.472.684.254 1.042zm1.466-3.262c-.274.446-.856.59-1.302.316-3.27-2.01-8.256-2.592-12.124-1.418-.502.152-1.036-.134-1.188-.636-.152-.502.134-1.036.636-1.188 4.418-1.34 9.914-.686 13.662 1.624.446.274.59.856.316 1.302zm.126-3.41c-3.922-2.328-10.384-2.542-14.134-1.404-.6.182-1.242-.162-1.424-.762-.182-.6.162-1.242.762-1.424 4.31-1.308 11.442-1.054 15.946 1.62.54.32.716 1.024.396 1.564-.32.54-1.024.716-1.564.396z"/>
+                  /* Clean Minimal Idle State */
+                  <div className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 border border-white/10 bg-white/[0.04]">
+                      <svg className="w-6 h-6 text-neutral-300" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
                       </svg>
                     </div>
-                    <h4 className="text-sm font-bold text-white tracking-tight mb-1">Spotify Idle</h4>
-                    <p className="text-[11px] text-neutral-400 max-w-xs mb-3.5 leading-relaxed">
-                      Play any song on Spotify to view live album art, track timeline, and synchronized lyrics.
+                    <h4 className="text-sm font-bold text-white tracking-tight mb-1">Nothing Playing</h4>
+                    <p className="text-[11px] text-neutral-400 max-w-xs mb-3 leading-relaxed">
+                      Start playing music on your PC to display full-bleed artwork and live lyrics.
                     </p>
                     <button
                       type="button"
                       onClick={handlePlayPause}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs shadow-[0_0_15px_rgba(29,185,84,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
                     >
                       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                         <polygon points="5 3 19 12 5 21 5 3" />
                       </svg>
-                      <span>Resume Spotify</span>
+                      <span>Play</span>
                     </button>
                   </div>
                 ) : (
-                  /* Main Player Row: Poster with Ambient Glow + Track Telemetry HUD */
-                  <div className="relative z-10 flex items-center justify-between gap-3.5 my-auto py-0.5 flex-1 min-h-0">
-                    
-                    {/* Left: 3D Poster Art with Rotating Vinyl & Ambient Backlight */}
-                    <div className="relative flex-shrink-0 w-22 h-22 sm:w-24 sm:h-24 flex items-center justify-center">
-                      
-                      {/* Deep Ambient Backlight Casting Dynamic Color */}
-                      <div 
-                        className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-700"
-                        style={{ 
-                          backgroundColor: ambientPalette.hex,
-                          boxShadow: ambientPalette.glowShadow,
-                          filter: 'blur(14px)',
-                          opacity: isPlaying ? 0.85 : 0.4
+                  <>
+                    {/* LEFT HALF: FULL-BLEED EDGE-TO-EDGE ALBUM ARTWORK SEAMLESSLY FADING INTO BLACK */}
+                    <div className="absolute inset-y-0 left-0 w-[48%] overflow-hidden pointer-events-none">
+                      {trackData.artwork ? (
+                        <img
+                          src={trackData.artwork}
+                          alt={trackData.title}
+                          className="w-full h-full object-cover object-center transition-all duration-700"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, ${ambientPalette.rgba(0.45)}, #09090b)` }}
+                        >
+                          <svg className="w-12 h-12 text-white/25" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {/* Silky Horizontal Fade Into Pure Black Right Half */}
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.68) 76%, #000000 100%)',
                         }}
                       />
-
-                      {/* Interactive Spinning Black Vinyl Record (Peeking out to the right) */}
-                      <div 
-                        className={`absolute right-0 w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-[#0a0a0c] border border-neutral-800 flex items-center justify-center shadow-2xl transition-transform duration-500 pointer-events-none ${
-                          isPlaying ? 'vinyl-rotating translate-x-3' : 'translate-x-1'
-                        }`}
+                      {/* Soft Bottom Vignette */}
+                      <div
+                        className="absolute inset-x-0 bottom-0 h-10"
                         style={{
-                          backgroundImage: 'radial-gradient(circle, #0a0a0c 35%, #16161a 36%, #0a0a0c 38%, #16161a 40%, #0a0a0c 43%, #16161a 46%, #0a0a0c 49%, #16161a 52%, #0a0a0c 56%, #16161a 60%, #0a0a0c 64%, #18181d 72%, #09090b 100%)'
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%)',
                         }}
-                      >
-                        {/* Center Record Label matching ambient poster color */}
-                        <div 
-                          className="w-6 h-6 rounded-full flex items-center justify-center border border-white/20 shadow-inner"
-                          style={{ backgroundColor: ambientPalette.hex }}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-black border border-white/40" />
-                        </div>
-                      </div>
-
-                      {/* High-Resolution Album Cover Poster Frame */}
-                      <div className="relative z-10 w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden border border-white/20 shadow-2xl bg-neutral-900 group">
-                        {trackData.artwork ? (
-                          <img 
-                            src={trackData.artwork} 
-                            alt={trackData.title}
-                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-neutral-800 text-neutral-500">
-                            <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.218.358-.684.472-1.042.254-2.857-1.745-6.455-2.14-10.692-1.17-.41.094-.822-.164-.916-.574-.094-.41.164-.822.574-.916 4.636-1.06 8.604-.61 11.822 1.364.358.218.472.684.254 1.042zm1.466-3.262c-.274.446-.856.59-1.302.316-3.27-2.01-8.256-2.592-12.124-1.418-.502.152-1.036-.134-1.188-.636-.152-.502.134-1.036.636-1.188 4.418-1.34 9.914-.686 13.662 1.624.446.274.59.856.316 1.302zm.126-3.41c-3.922-2.328-10.384-2.542-14.134-1.404-.6.182-1.242-.162-1.424-.762-.182-.6.162-1.242.762-1.424 4.31-1.308 11.442-1.054 15.946 1.62.54.32.716 1.024.396 1.564-.32.54-1.024.716-1.564.396z"/>
-                            </svg>
-                          </div>
-                        )}
-                        {/* Glossy reflective sheen */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/20 pointer-events-none" />
-                      </div>
+                      />
                     </div>
 
-                    {/* Right: Track HUD, Live Audio Spectrum & Controls */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between h-full pl-0.5">
-                      
-                      {/* Track Title & Artist */}
-                      <div className="flex items-start justify-between gap-1">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate drop-shadow-sm" title={trackData.title}>
-                            {trackData.title}
-                          </h4>
-                          <p className="text-[10px] text-neutral-300 font-medium truncate mt-0.5 flex items-center gap-1">
-                            <span>{trackData.artist}</span>
-                            <span className="text-neutral-500">•</span>
-                            <span className="text-neutral-400 truncate max-w-[120px]">{trackData.album}</span>
-                          </p>
-                          {/* Live Synchronized Rolling Lyric Subtitle */}
-                          {hasLyrics && currentLyricLine && (
-                            <div 
-                              key={activeLyricIndex} 
-                              className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/40 border border-white/10 max-w-full animate-lyric-slide"
-                            >
-                              <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: ambientPalette.hex }}>
-                                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                              </svg>
-                              <span className="text-[9.5px] font-medium text-neutral-200 truncate" title={currentLyricLine}>
-                                {currentLyricLine}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    {/* Subtle Ambient Seam Aura */}
+                    <div
+                      className="absolute inset-y-0 left-[34%] w-24 blur-2xl opacity-25 pointer-events-none transition-colors duration-700"
+                      style={{ backgroundColor: ambientPalette.hex }}
+                    />
 
-                        {/* 5-Bar Live Dancing Equalizer Visualizer */}
-                        <div className="flex items-end gap-0.5 h-4 flex-shrink-0 pl-1" title="Ambient Spectrum">
-                          <span 
-                            className={`w-0.5 rounded-full transition-all ${isPlaying ? 'eq-bar-1' : 'h-1'}`} 
-                            style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 6px ${ambientPalette.hex}` }} 
-                          />
-                          <span 
-                            className={`w-0.5 rounded-full transition-all ${isPlaying ? 'eq-bar-2' : 'h-1.5'}`} 
-                            style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 6px ${ambientPalette.hex}` }} 
-                          />
-                          <span 
-                            className={`w-0.5 rounded-full transition-all ${isPlaying ? 'eq-bar-3' : 'h-1'}`} 
-                            style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 6px ${ambientPalette.hex}` }} 
-                          />
-                          <span 
-                            className={`w-0.5 rounded-full transition-all ${isPlaying ? 'eq-bar-4' : 'h-2'}`} 
-                            style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 6px ${ambientPalette.hex}` }} 
-                          />
-                          <span 
-                            className={`w-0.5 rounded-full transition-all ${isPlaying ? 'eq-bar-5' : 'h-1'}`} 
-                            style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 6px ${ambientPalette.hex}` }} 
-                          />
-                        </div>
+                    {/* RIGHT HALF: PURE BLACK CINEMA LYRICS, TIMELINE & MINIMAL CONTROLS */}
+                    <div className="relative z-10 ml-[42%] w-[58%] h-full px-3.5 py-2.5 flex flex-col justify-between">
+                      {/* Top Single Track Title · Artist Line */}
+                      <div className="min-w-0">
+                        <p className="text-[11px] truncate leading-tight" title={`${trackData.title} · ${trackData.artist}`}>
+                          <span className="font-bold text-white">{trackData.title}</span>
+                          {trackData.artist && (
+                            <>
+                              <span className="text-neutral-500 mx-1">·</span>
+                              <span className="text-neutral-400 font-medium">{trackData.artist}</span>
+                            </>
+                          )}
+                        </p>
                       </div>
 
-                      {/* Progress Bar with Interactive Click-to-Seek */}
-                      <div className="mt-1 mb-0.5">
-                        <div 
+                      {/* Hero Synced Lyrics Stage (Active Bold Karaoke Line + Muted Next Line) */}
+                      <div className="my-auto py-1 min-w-0">
+                        {displaySettings.showLyrics !== false && hasLyrics && currentLyricLine ? (
+                          <div key={activeLyricIndex} className="animate-lyric-slide space-y-1">
+                            <div
+                              className="text-[17px] leading-[1.2] font-bold tracking-tight text-white line-clamp-2"
+                              title={currentLyricLine}
+                            >
+                              {renderLyricContent(currentLyricLine, false, true)}
+                            </div>
+                            {nextLyricLine && (
+                              <p
+                                className="text-[11px] text-neutral-500 font-medium truncate leading-snug"
+                                title={nextLyricLine}
+                              >
+                                {nextLyricLine}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <div className="text-[17px] leading-[1.2] font-bold tracking-tight text-white line-clamp-2">
+                              {trackData.title}
+                            </div>
+                            {trackData.album && (
+                              <p className="text-[11px] text-neutral-500 font-medium truncate">
+                                {trackData.album}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Minimal Timeline Row: 0:36  ─────  -2:49 */}
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[10px] font-mono text-neutral-400 tabular-nums shrink-0">
+                          {formatTrackClock(trackPosition)}
+                        </span>
+                        <div
                           onClick={handleSeek}
-                          className="group relative w-full bg-neutral-800/80 hover:bg-neutral-700/80 h-1.5 rounded-full overflow-hidden cursor-pointer transition-all"
-                          title="Click to Seek Track"
+                          className="group relative flex-1 bg-white/20 h-1 hover:h-1.5 rounded-full overflow-hidden cursor-pointer transition-all"
+                          title="Seek"
                         >
-                          <div 
-                            className="h-full rounded-full transition-all duration-300 relative"
-                            style={{ 
+                          <div
+                            className="h-full rounded-full bg-white transition-all duration-200"
+                            style={{
                               width: `${Math.min(100, Math.max(0, (trackPosition / (trackData.duration || 200)) * 100))}%`,
-                              backgroundColor: ambientPalette.hex,
-                              boxShadow: `0 0 10px ${ambientPalette.hex}`
                             }}
                           />
                         </div>
+                        <span className="text-[10px] font-mono text-neutral-400 tabular-nums shrink-0">
+                          -{formatTrackClock(Math.max(0, (trackData.duration || 200) - trackPosition))}
+                        </span>
+                      </div>
 
-                        {/* Time Indicators */}
-                        <div className="flex items-center justify-between text-[8.5px] font-mono text-neutral-400 mt-0.5">
-                          <span>{formatTime(trackPosition)}</span>
-                          <span className="text-[7.5px] text-neutral-500 uppercase tracking-wider font-semibold">
-                            {isPlaying ? 'Streaming HD' : 'Paused'}
-                          </span>
-                          <span>{formatTime(trackData.duration || 200)}</span>
+                      {/* Bottom Centered Transport Controls + Subtle Sync Icon */}
+                      <div className="relative flex items-center justify-center pt-1">
+                        <div className="flex items-center gap-5">
+                          {/* Previous Track */}
+                          <button
+                            type="button"
+                            onClick={handlePrevTrack}
+                            title="Previous"
+                            className="p-1.5 rounded-full text-white/85 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <rect x="4" y="5" width="2.5" height="14" rx="1.25" />
+                              <path d="M19 6.27a1 1 0 0 0-1.55-.83L8.8 11.17a1 1 0 0 0 0 1.66l8.65 5.73A1 1 0 0 0 19 17.73V6.27z" />
+                            </svg>
+                          </button>
+
+                          {/* Solid White Circular Play / Pause */}
+                          <button
+                            type="button"
+                            onClick={handlePlayPause}
+                            title={isPlaying ? 'Pause' : 'Play'}
+                            className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_4px_18px_rgba(255,255,255,0.22)] cursor-pointer"
+                          >
+                            {isPlaying ? (
+                              <svg className="w-4 h-4 fill-black" viewBox="0 0 24 24">
+                                <rect x="6" y="5" width="3.8" height="14" rx="1.4" />
+                                <rect x="14.2" y="5" width="3.8" height="14" rx="1.4" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                <path d="M7 5.25a1.25 1.25 0 0 1 1.93-1.05l10.5 6.75a1.25 1.25 0 0 1 0 2.1l-10.5 6.75A1.25 1.25 0 0 1 7 18.75V5.25z" />
+                              </svg>
+                            )}
+                          </button>
+
+                          {/* Next Track */}
+                          <button
+                            type="button"
+                            onClick={handleNextTrack}
+                            title="Next"
+                            className="p-1.5 rounded-full text-white/85 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M5 6.27a1 1 0 0 1 1.55-.83l8.65 5.73a1 1 0 0 1 0 1.66L6.55 18.56A1 1 0 0 1 5 17.73V6.27z" />
+                              <rect x="17.5" y="5" width="2.5" height="14" rx="1.25" />
+                            </svg>
+                          </button>
                         </div>
+
+                        {/* Compact Subtle Right Icon Button (Refresh / Sync Playback) */}
+                        <button
+                          type="button"
+                          onClick={() => window.electronAPI?.refreshLiveMedia?.()}
+                          title="Refresh Playback Sync"
+                          className="absolute right-0 w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] border border-white/10 text-neutral-300 hover:text-white flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                          </svg>
+                        </button>
                       </div>
-
-                      {/* Playback Controls Deck */}
-                      <div className="flex items-center justify-between pt-1 px-1">
-                        
-                        {/* Shuffle Button */}
-                        <button
-                          type="button"
-                          onClick={() => setIsShuffle(!isShuffle)}
-                          title={isShuffle ? 'Shuffle Active' : 'Shuffle Off'}
-                          className="relative p-1.5 rounded-full hover:bg-white/10 active:scale-90 transition-all cursor-pointer group"
-                          style={{ color: isShuffle ? ambientPalette.hex : '#9ca3af' }}
-                        >
-                          <svg className="w-3.5 h-3.5 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="16 3 21 3 21 8" />
-                            <line x1="4" y1="20" x2="21" y2="3" />
-                            <polyline points="21 16 21 21 16 21" />
-                            <line x1="15" y1="15" x2="21" y2="21" />
-                            <line x1="4" y1="4" x2="9" y2="9" />
-                          </svg>
-                          {isShuffle && (
-                            <span 
-                              className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                              style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 4px ${ambientPalette.hex}` }}
-                            />
-                          )}
-                        </button>
-
-                        {/* Prev Track */}
-                        <button
-                          type="button"
-                          onClick={handlePrevTrack}
-                          title="Previous Track"
-                          className="p-1.5 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer group"
-                        >
-                          <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="5" width="2.5" height="14" rx="1.25" />
-                            <path d="M19 6.27a1 1 0 0 0-1.55-.83L8.8 11.17a1 1 0 0 0 0 1.66l8.65 5.73A1 1 0 0 0 19 17.73V6.27z" />
-                          </svg>
-                        </button>
-
-                        {/* Main Play / Pause Button with Ambient Halo */}
-                        <button
-                          type="button"
-                          onClick={handlePlayPause}
-                          title={isPlaying ? 'Pause' : 'Play'}
-                          className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl cursor-pointer relative group"
-                          style={{
-                            boxShadow: isPlaying 
-                              ? `0 0 18px ${ambientPalette.hex}95, 0 0 6px ${ambientPalette.hex}, 0 2px 8px rgba(0,0,0,0.6)` 
-                              : '0 2px 10px rgba(0,0,0,0.5)'
-                          }}
-                        >
-                          {isPlaying ? (
-                            <svg className="w-3.5 h-3.5 fill-neutral-900 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
-                              <rect x="6" y="5" width="3.5" height="14" rx="1.5" />
-                              <rect x="14.5" y="5" width="3.5" height="14" rx="1.5" />
-                            </svg>
-                          ) : (
-                            <svg className="w-3.5 h-3.5 fill-neutral-900 translate-x-0.5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
-                              <path d="M7 5.25a1.25 1.25 0 0 1 1.93-1.05l10.5 6.75a1.25 1.25 0 0 1 0 2.1l-10.5 6.75A1.25 1.25 0 0 1 7 18.75V5.25z" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {/* Next Track */}
-                        <button
-                          type="button"
-                          onClick={handleNextTrack}
-                          title="Next Track"
-                          className="p-1.5 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer group"
-                        >
-                          <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M5 6.27a1 1 0 0 1 1.55-.83l8.65 5.73a1 1 0 0 1 0 1.66L6.55 18.56A1 1 0 0 1 5 17.73V6.27z" />
-                            <rect x="17.5" y="5" width="2.5" height="14" rx="1.25" />
-                          </svg>
-                        </button>
-
-                        {/* Repeat Button */}
-                        <button
-                          type="button"
-                          onClick={() => setIsRepeat(!isRepeat)}
-                          title={isRepeat ? 'Repeat Active' : 'Repeat Off'}
-                          className="relative p-1.5 rounded-full hover:bg-white/10 active:scale-90 transition-all cursor-pointer group"
-                          style={{ color: isRepeat ? ambientPalette.hex : '#9ca3af' }}
-                        >
-                          <svg className="w-3.5 h-3.5 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="17 1 21 5 17 9" />
-                            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                            <polyline points="7 23 3 19 7 15" />
-                            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                          </svg>
-                          {isRepeat && (
-                            <span 
-                              className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                              style={{ backgroundColor: ambientPalette.hex, boxShadow: `0 0 4px ${ambientPalette.hex}` }}
-                            />
-                          )}
-                        </button>
-
-                      </div>
-
                     </div>
-
-                  </div>
+                  </>
                 )}
-
               </div>
             )}
 
             {/* 5. REDESIGNED HIGH-TECH FOCUS & POMODORO PRODUCTIVITY SUITE */}
             {activeTab === 'focus' && (
-              <div className="relative flex items-center justify-between h-full p-2.5 rounded-2xl bg-[#0e0e12]/95 border border-neutral-800/80 animate-fadeIn select-none overflow-hidden gap-3.5">
+              <div className="relative flex items-stretch justify-between h-full p-2 rounded-2xl bg-[#0e0e12]/95 border border-neutral-800/80 animate-tabSlide select-none overflow-hidden gap-2">
                 
                 {/* Ambient Focus Glow Backdrop */}
                 <div 
-                  className="absolute -top-10 -left-10 w-44 h-44 rounded-full pointer-events-none blur-3xl opacity-30 transition-all duration-700"
+                  className={`absolute -top-10 -left-10 w-40 h-40 rounded-full pointer-events-none blur-3xl opacity-25 transition-all duration-700 ${isFocusRunning ? 'animate-pulseSubtle' : ''}`}
                   style={{ backgroundColor: focusPhase === 'work' ? '#f59e0b' : '#10b981' }}
                 />
 
                 {/* LEFT COLUMN: CIRCULAR RADIAL TIMER RING + STAGE SWITCHER */}
-                <div className="flex flex-col items-center justify-between h-full w-[165px] flex-shrink-0 py-0.5">
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-[130px] flex-shrink-0">
                   
                   {/* Radial SVG Progress Ring */}
-                  <div className="relative w-28 h-28 flex items-center justify-center">
+                  <div className="relative w-20 h-20 flex items-center justify-center my-auto">
                     {/* SVG Progress Circle */}
                     <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
                       {/* Background Track */}
@@ -5052,17 +5870,14 @@ export default function DynamicIsland({
 
                     {/* Center Clock & Badge */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-[10px] text-neutral-400 font-medium flex items-center gap-1">
-                        <span>{focusPhase === 'work' ? '🎯' : focusPhase === 'shortBreak' ? '☕' : '🌴'}</span>
-                        <span className="text-[9px] uppercase tracking-wider font-mono font-bold" style={{ color: focusPhase === 'work' ? '#f59e0b' : '#10b981' }}>
-                          {focusPhase === 'work' ? 'WORK' : focusPhase === 'shortBreak' ? 'SHORT' : 'LONG'}
-                        </span>
+                      <span className="text-[8px] uppercase tracking-wider font-mono font-bold" style={{ color: focusPhase === 'work' ? '#f59e0b' : '#10b981' }}>
+                        {focusPhase === 'work' ? 'WORK' : focusPhase === 'shortBreak' ? 'SHORT' : 'LONG'}
                       </span>
-                      <span className="text-xl font-mono font-black tracking-tight text-white drop-shadow-sm mt-0.5">
+                      <span className="text-base font-mono font-black tracking-tight text-white drop-shadow-sm leading-tight">
                         {formatTime(focusSecondsLeft)}
                       </span>
                       {/* Cycle dots: 4 pips */}
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="flex items-center gap-1 mt-0.5">
                         {[1, 2, 3, 4].map((pip) => (
                           <span
                             key={pip}
@@ -5082,56 +5897,56 @@ export default function DynamicIsland({
                   </div>
 
                   {/* Stage Switcher Pills */}
-                  <div className="flex items-center gap-1 w-full justify-center pt-1">
+                  <div className="flex items-center gap-1 w-full justify-center flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => handleSelectPhase('work')}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-all ${
+                      className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-medium transition-all cursor-pointer ${
                         focusPhase === 'work'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_8px_rgba(245,158,11,0.25)]'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
                           : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                       }`}
                     >
-                      🎯 Work
+                      Work
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSelectPhase('shortBreak')}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-all ${
+                      className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-medium transition-all cursor-pointer ${
                         focusPhase === 'shortBreak'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
                           : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                       }`}
                     >
-                      ☕ Break
+                      Break
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSelectPhase('longBreak')}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-all ${
+                      className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-medium transition-all cursor-pointer ${
                         focusPhase === 'longBreak'
-                          ? 'bg-teal-500/20 text-teal-300 border border-teal-500/50 shadow-[0_0_8px_rgba(20,184,166,0.25)]'
+                          ? 'bg-teal-500/20 text-teal-300 border border-teal-500/50'
                           : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                       }`}
                     >
-                      🌴 Long
+                      Long
                     </button>
                   </div>
 
                 </div>
 
                 {/* RIGHT COLUMN: TASK INPUT + CONTROLS + PRESETS + STATS */}
-                <div className="flex-1 flex flex-col justify-between h-full pl-1">
+                <div className="relative z-10 flex-1 min-w-0 overflow-hidden flex flex-col justify-between h-full">
                   
                   {/* 1. Task Name Input + Quick Presets */}
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] text-neutral-400 pb-1">
-                      <span className="font-semibold text-neutral-200 flex items-center gap-1">
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between text-[9px] text-neutral-400 pb-0.5">
+                      <span className="font-semibold text-neutral-200 flex items-center gap-1 truncate">
                         <span style={{ color: focusPhase === 'work' ? '#f59e0b' : '#10b981' }}>●</span>
                         <span>CURRENT TARGET</span>
                       </span>
-                      <span className="text-[9px] font-mono text-neutral-400">
-                        Cycle {focusCycle} of 4
+                      <span className="text-[8px] font-mono text-neutral-400 shrink-0">
+                        Cycle {focusCycle}/4
                       </span>
                     </div>
                     
@@ -5142,23 +5957,23 @@ export default function DynamicIsland({
                       placeholder="What are you focusing on?"
                       onFocus={() => onInputFocusChange?.(true)}
                       onBlur={() => onInputFocusChange?.(false)}
-                      className="w-full bg-[#16161a] border border-neutral-800 focus:border-amber-500/60 rounded-xl px-2.5 py-1 text-xs text-white placeholder-neutral-500 outline-none transition-colors"
+                      className="w-full bg-[#16161a] border border-neutral-800 focus:border-amber-500/60 rounded-xl px-2 py-0.5 text-[10.5px] text-white placeholder-neutral-500 outline-none transition-colors"
                     />
 
                     {/* Quick Tag Presets */}
-                    <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                    <div className="flex items-center gap-1 mt-0.5 overflow-x-auto no-scrollbar">
                       {[
-                        { label: '💻 Coding', text: 'Coding Sprint' },
-                        { label: '📝 Writing', text: 'Deep Writing' },
-                        { label: '📚 Study', text: 'Study Session' },
-                        { label: '🎨 Design', text: 'UI/UX Design' },
-                        { label: '⚡ Sprint', text: 'Rapid Sprint' },
+                        { label: 'Coding', text: 'Coding Sprint' },
+                        { label: 'Writing', text: 'Deep Writing' },
+                        { label: 'Study', text: 'Study Session' },
+                        { label: 'Design', text: 'UI/UX Design' },
+                        { label: 'Sprint', text: 'Rapid Sprint' },
                       ].map((tag) => (
                         <button
                           key={tag.label}
                           type="button"
                           onClick={() => setFocusTaskName(tag.text)}
-                          className="px-2 py-0.5 rounded-md bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[9px] text-neutral-300 hover:text-white transition-all whitespace-nowrap active:scale-95 cursor-pointer"
+                          className="px-1.5 py-0.5 rounded-md bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[8.5px] text-neutral-300 hover:text-white transition-all whitespace-nowrap active:scale-95 cursor-pointer shrink-0"
                         >
                           {tag.label}
                         </button>
@@ -5167,20 +5982,20 @@ export default function DynamicIsland({
                   </div>
 
                   {/* 2. Main Play / Pause & Action Controls Deck */}
-                  <div className="flex items-center gap-2 py-1">
+                  <div className="flex items-center gap-1.5 py-0.5">
                     {/* Big Glow Start / Pause Button */}
                     <button
                       type="button"
                       onClick={handleToggleFocus}
-                      className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer ${
+                      className={`flex-1 py-1 px-2.5 rounded-xl font-bold text-[10.5px] flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer ${
                         isFocusRunning
-                          ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.5)]'
-                          : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.4)]'
+                          ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.45)]'
+                          : 'bg-white text-black hover:bg-neutral-200'
                       }`}
                     >
                       {isFocusRunning ? (
                         <>
-                          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
                             <rect x="6" y="5" width="4" height="14" rx="1.5" />
                             <rect x="14" y="5" width="4" height="14" rx="1.5" />
                           </svg>
@@ -5188,7 +6003,7 @@ export default function DynamicIsland({
                         </>
                       ) : (
                         <>
-                          <svg className="w-3.5 h-3.5 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 fill-current translate-x-0.5" viewBox="0 0 24 24">
                             <path d="M7 5.25a1.25 1.25 0 0 1 1.93-1.05l10.5 6.75a1.25 1.25 0 0 1 0 2.1l-10.5 6.75A1.25 1.25 0 0 1 7 18.75V5.25z" />
                           </svg>
                           <span>{focusSecondsLeft < focusTotalSeconds ? 'Resume' : 'Start Focus'}</span>
@@ -5201,7 +6016,7 @@ export default function DynamicIsland({
                       type="button"
                       onClick={handleSkipFocusPhase}
                       title="Skip to next stage"
-                      className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+                      className="p-1 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-all active:scale-95 cursor-pointer shrink-0"
                     >
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                         <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" />
@@ -5214,7 +6029,7 @@ export default function DynamicIsland({
                       type="button"
                       onClick={handleResetFocus}
                       title="Reset timer"
-                      className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+                      className="p-1 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-all active:scale-95 cursor-pointer shrink-0"
                     >
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                         <polyline points="1 4 1 10 7 10" />
@@ -5224,7 +6039,7 @@ export default function DynamicIsland({
                   </div>
 
                   {/* 3. Duration Presets & Audio Chime Toggle */}
-                  <div className="flex items-center justify-between pt-1 border-t border-neutral-800/80 text-[9px]">
+                  <div className="flex items-center justify-between pt-0.5 border-t border-neutral-800/80 text-[8.5px] min-w-0">
                     {/* Preset Selector */}
                     <div className="flex items-center gap-1">
                       {Object.entries(FOCUS_PRESETS).map(([key, item]) => (
@@ -5249,15 +6064,15 @@ export default function DynamicIsland({
                         type="button"
                         onClick={() => setIsChimeEnabled(!isChimeEnabled)}
                         title={isChimeEnabled ? 'Audio Chimes Enabled' : 'Audio Chimes Muted'}
-                        className={`p-1 rounded text-[10px] transition-colors cursor-pointer ${
+                        className={`p-1 rounded transition-colors cursor-pointer flex items-center justify-center ${
                           isChimeEnabled ? 'text-amber-400' : 'text-neutral-600'
                         }`}
                       >
-                        {isChimeEnabled ? '🔔' : '🔕'}
+                        {isChimeEnabled ? <IconBell className="w-3.5 h-3.5 text-amber-400" /> : <IconBellOff className="w-3.5 h-3.5 text-neutral-600" />}
                       </button>
 
                       <span className="font-mono text-[9px] text-neutral-400 flex items-center gap-1">
-                        <span className="text-amber-400">🔥</span>
+                        <IconFlame className="w-3 h-3 text-amber-400" />
                         <span>{completedSessionsToday} done</span>
                       </span>
                     </div>
@@ -5270,12 +6085,12 @@ export default function DynamicIsland({
 
             {/* 6. SMART REAL-TIME CLIPBOARD TAB */}
             {activeTab === 'clipboard' && (
-              <div className="flex flex-col h-full overflow-hidden select-none">
+              <div className="flex flex-col h-full overflow-hidden select-none animate-tabSlide">
                 {/* Header with Live Sync & Clear Action */}
                 <div className="flex items-center justify-between px-1 pb-1.5 border-b border-neutral-800/80 mb-2 flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold text-neutral-200 tracking-wide flex items-center gap-1.5">
-                      <span className="text-emerald-400">📋</span>
+                      <IconClipboard className="w-3.5 h-3.5 text-emerald-400" />
                       <span>SMART CLIPBOARD</span>
                     </span>
                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
@@ -5304,8 +6119,8 @@ export default function DynamicIsland({
                 {/* Empty State vs Items List */}
                 {clipboardItems.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center p-3 text-center rounded-2xl bg-neutral-900/40 border border-neutral-800/50">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-lg mb-2 shadow-[0_0_16px_rgba(16,185,129,0.15)]">
-                      📋
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center mb-2 shadow-[0_0_16px_rgba(16,185,129,0.15)]">
+                      <IconClipboard className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div className="text-xs font-semibold text-neutral-200 mb-0.5">
                       Clipboard is Empty
@@ -5315,13 +6130,13 @@ export default function DynamicIsland({
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-1.5">
                       <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-md bg-neutral-900/90 border border-neutral-800 text-neutral-400">
-                        ⚡ Real-Time Capture
+                        Real-Time Capture
                       </span>
                       <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-md bg-neutral-900/90 border border-neutral-800 text-neutral-400">
-                        🔟 Holds 10 Recent
+                        Holds 10 Recent
                       </span>
                       <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-md bg-neutral-900/90 border border-neutral-800 text-neutral-400">
-                        👆 1-Click Copy
+                        1-Click Copy
                       </span>
                     </div>
                   </div>
@@ -5343,7 +6158,7 @@ export default function DynamicIsland({
                           key={item.id}
                           onClick={(e) => handleCopyClipboardItem(item, e)}
                           title="Click to copy back to clipboard"
-                          className={`group relative p-2 rounded-xl transition-all duration-200 cursor-pointer border ${
+                          className={`group relative p-2 rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer border ${
                             isCopied
                               ? 'bg-emerald-950/40 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                               : 'bg-neutral-900/80 hover:bg-neutral-850/90 border-neutral-800 hover:border-neutral-700/90'
@@ -5379,7 +6194,8 @@ export default function DynamicIsland({
                               {/* Copy feedback badge */}
                               {isCopied ? (
                                 <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500 text-black flex items-center gap-1 animate-in fade-in zoom-in-95">
-                                  ✓ Copied!
+                                  <IconCheck className="w-2.5 h-2.5 text-black stroke-[2.5]" />
+                                  <span>Copied!</span>
                                 </span>
                               ) : (
                                 <span className="opacity-0 group-hover:opacity-100 text-[8.5px] font-mono text-emerald-400/90 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 transition-opacity">
@@ -5416,20 +6232,20 @@ export default function DynamicIsland({
 
             {/* 7. HIGH-TECH MULTI-SLOT QUICK SCRATCHPAD */}
             {activeTab === 'notes' && (
-              <div className="flex flex-col h-full overflow-hidden select-none">
+              <div className="flex flex-col h-full overflow-hidden select-none animate-tabSlide">
                 {/* Top Header: Slots & Auto-save Status */}
                 <div className="flex items-center justify-between px-1 pb-1.5 border-b border-neutral-800/80 mb-1.5 flex-shrink-0">
                   {/* Left: Slot Tabs */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-bold text-neutral-300 tracking-wide flex items-center gap-1 mr-1">
-                      <span>📝</span>
+                      <IconNotes className="w-3.5 h-3.5 text-neutral-300" />
                       <span className="hidden sm:inline">SCRATCHPAD</span>
                     </span>
 
                     {[
-                      { id: 'general', label: 'General', icon: '📝' },
-                      { id: 'todo', label: 'Tasks', icon: '🎯' },
-                      { id: 'scratch', label: 'Snippets', icon: '💡' },
+                      { id: 'general', label: 'General', icon: <IconNotes className="w-3 h-3" /> },
+                      { id: 'todo', label: 'Tasks', icon: <IconCheck className="w-3 h-3" /> },
+                      { id: 'scratch', label: 'Snippets', icon: <IconCode className="w-3 h-3" /> },
                     ].map((slot) => {
                       const isActive = activeNoteSlot === slot.id;
                       const hasText = !!(scratchNotesBySlot[slot.id] && scratchNotesBySlot[slot.id].trim());
@@ -5438,13 +6254,13 @@ export default function DynamicIsland({
                           key={slot.id}
                           type="button"
                           onClick={() => setActiveNoteSlot(slot.id)}
-                          className={`px-2 py-0.5 rounded-lg text-[9.5px] font-mono transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                          className={`px-2 py-0.5 rounded-lg text-[9.5px] font-mono transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                             isActive
                               ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 font-bold shadow-[0_0_8px_rgba(16,185,129,0.2)]'
                               : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
                           }`}
                         >
-                          <span>{slot.icon}</span>
+                          {slot.icon}
                           <span>{slot.label}</span>
                           {hasText && !isActive && (
                             <span className="w-1 h-1 rounded-full bg-emerald-400/80"></span>
@@ -5494,10 +6310,11 @@ export default function DynamicIsland({
                         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} - `;
                         insertTextAtCursor(timeStr);
                       }}
-                      className="px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors cursor-pointer active:scale-95"
+                      className="px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
                       title="Insert current timestamp"
                     >
-                      🕒 Time
+                      <IconClock className="w-3 h-3 text-neutral-400" />
+                      <span>Time</span>
                     </button>
                   </div>
 
@@ -5525,7 +6342,7 @@ export default function DynamicIsland({
                       }`}
                       title="Copy entire note to clipboard"
                     >
-                      <span>{scratchCopied ? '✓' : '📋'}</span>
+                      {scratchCopied ? <IconCheck className="w-3 h-3 text-black" /> : <IconCopy className="w-3 h-3 text-neutral-300" />}
                       <span>{scratchCopied ? 'Copied' : 'Copy'}</span>
                     </button>
 
@@ -5534,10 +6351,10 @@ export default function DynamicIsland({
                       type="button"
                       onClick={handleExportScratch}
                       disabled={!currentNoteText}
-                      className="px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 transition-colors cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 transition-colors cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
                       title="Download as .txt"
                     >
-                      📥
+                      <IconDownload className="w-3 h-3 text-neutral-400" />
                     </button>
 
                     {/* Clear Slot */}
@@ -5545,14 +6362,14 @@ export default function DynamicIsland({
                       type="button"
                       onClick={handleClearScratch}
                       disabled={!currentNoteText}
-                      className={`px-1.5 py-0.5 rounded transition-all cursor-pointer active:scale-95 border ${
+                      className={`px-1.5 py-0.5 rounded transition-all cursor-pointer active:scale-95 border flex items-center justify-center ${
                         confirmClearSlot
                           ? 'bg-rose-500 text-white border-rose-400 font-bold'
                           : 'bg-neutral-900 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 border-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed'
                       }`}
                       title={confirmClearSlot ? 'Click again to confirm clear' : 'Clear this note'}
                     >
-                      {confirmClearSlot ? 'Confirm?' : '🗑️'}
+                      {confirmClearSlot ? 'Confirm?' : <IconTrash className="w-3 h-3 text-neutral-400" />}
                     </button>
                   </div>
                 </div>
@@ -5586,120 +6403,108 @@ export default function DynamicIsland({
             {/* 8. GMAIL & MAIL NOTIFICATIONS TAB                        */}
             {/* ======================================================== */}
             {activeTab === 'mail' && (
-              <div className="flex flex-col h-full overflow-hidden select-none animate-fadeIn">
+              <div className="flex flex-col h-full overflow-hidden select-none animate-tabSlide">
                 {!mailConfig.connected ? (
-                  /* 1. DISCONNECTED STATE: Privacy Guarantee & Connect Flow */
-                  <div className="flex-1 flex flex-col justify-between py-1 px-1">
+                  /* 1. DISCONNECTED STATE: Minimal Obsidian Connect Flow */
+                  <div className="flex-1 flex flex-col justify-between py-0.5 px-0.5 min-h-0">
                     {/* Header */}
-                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80 mb-2 flex-shrink-0">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.07] mb-2 flex-shrink-0">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-rose-500/20 to-red-600/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xs shadow-sm">
-                          ✉️
+                        <div className="w-5 h-5 rounded-md bg-white/[0.06] border border-white/[0.09] flex items-center justify-center text-neutral-200">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                          </svg>
                         </div>
-                        <span className="text-xs font-bold text-white tracking-tight">Gmail Notifications</span>
+                        <span className="text-[11px] font-semibold text-white tracking-tight">Gmail</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-[8.5px] font-mono text-neutral-400">
+                      <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-[8.5px] font-mono text-neutral-400">
                         Not Connected
                       </span>
                     </div>
 
-                    {/* Main Card: Action & Privacy Shield */}
-                    <div className="flex-1 flex items-center justify-between gap-3 min-h-0">
-                      {/* Left Side: Connect Form */}
-                      <div className="flex-1 flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#131318] to-[#0c0c0f] border border-neutral-800/90 shadow-sm h-full">
+                    {/* Main Cards */}
+                    <div className="flex-1 flex items-stretch gap-2.5 min-h-0">
+                      {/* Left: Connect Form */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between p-3 rounded-2xl bg-[#101014] border border-white/[0.07]">
                         <div>
-                          <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span className="text-rose-400">●</span>
-                            <span>Connect your Google Account</span>
+                          <h4 className="text-[11.5px] font-semibold text-white tracking-tight">
+                            Connect your Google Account
                           </h4>
-                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
-                            Receive non-intrusive notifications right on the Dynamic Island whenever new mail arrives.
+                          <p className="text-[9.5px] text-neutral-400 mt-1 leading-relaxed">
+                            Receive quiet, unobtrusive unread alerts directly on the Island when new mail arrives.
                           </p>
                         </div>
 
-                        <div className="my-auto space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="email"
-                              value={mailEmailInput}
-                              onChange={(e) => setMailEmailInput(e.target.value)}
-                              placeholder="your.email@gmail.com"
-                              className="flex-1 px-2.5 py-1.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-rose-500/80 font-mono transition-all"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleConnectMail();
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleConnectMail()}
-                              disabled={isMailConnecting}
-                              className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(244,63,94,0.4)] disabled:opacity-50"
-                            >
-                              <span>{isMailConnecting ? '⏳' : '⚡'}</span>
-                              <span>{isMailConnecting ? 'Connecting...' : 'Connect'}</span>
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[9px] text-neutral-400 font-mono">
-                            <span>Quick start:</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const quickEmail = 'creator@gmail.com';
-                                setMailEmailInput(quickEmail);
-                                handleConnectMail(quickEmail);
-                              }}
-                              className="text-rose-400 hover:text-rose-300 underline cursor-pointer"
-                            >
-                              Connect demo account
-                            </button>
-                          </div>
+                        <div className="my-auto flex items-center gap-1.5">
+                          <input
+                            type="email"
+                            value={mailEmailInput}
+                            onChange={(e) => setMailEmailInput(e.target.value)}
+                            onFocus={() => onInputFocusChange?.(true)}
+                            onBlur={() => onInputFocusChange?.(false)}
+                            placeholder="your.email@gmail.com"
+                            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-black/60 border border-white/[0.09] text-white placeholder-neutral-500 text-[11px] focus:outline-none focus:border-white/30 font-mono transition-colors"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleConnectMail();
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleConnectMail()}
+                            disabled={isMailConnecting}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex-shrink-0"
+                          >
+                            <span>{isMailConnecting ? 'Linking...' : 'Connect'}</span>
+                          </button>
                         </div>
 
-                        <div className="pt-1.5 border-t border-neutral-800/70 text-[8.5px] text-neutral-500 font-mono flex items-center justify-between">
-                          <span>Secure token integration</span>
-                          <span className="text-emerald-400">SSL 256-Bit</span>
+                        <div className="pt-1.5 border-t border-white/[0.06] text-[8.5px] text-neutral-500 font-mono flex items-center justify-between">
+                          <span>Local encrypted session</span>
+                          <span className="text-neutral-300">Count-only</span>
                         </div>
                       </div>
 
-                      {/* Right Side: USER-SPECIFIED PRIVACY NOTE */}
-                      <div className="w-[195px] flex flex-col justify-between p-3 rounded-2xl bg-[#0f1117] border border-emerald-500/30 text-neutral-300 shadow-sm relative overflow-hidden h-full">
-                        <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
-                          <span className="text-sm">🛡️</span>
-                          <span>Privacy Guarantee</span>
+                      {/* Right: Minimal Privacy Card */}
+                      <div className="w-[184px] flex-shrink-0 flex flex-col justify-between p-3 rounded-2xl bg-[#0d0d11] border border-white/[0.07] text-neutral-300">
+                        <div className="flex items-center gap-1.5 text-neutral-200 font-semibold text-[10.5px]">
+                          <svg className="w-3.5 h-3.5 text-neutral-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                          </svg>
+                          <span>Privacy First</span>
                         </div>
 
-                        <div className="my-auto space-y-2">
-                          <p className="text-[10px] leading-relaxed text-neutral-200">
-                            Eyeland <strong className="text-emerald-300 font-bold">only sees how many unread emails</strong> you have.
+                        <div className="my-auto space-y-1.5">
+                          <p className="text-[9.5px] leading-relaxed text-neutral-300">
+                            Eyeland <span className="text-white font-medium">only sees your unread count</span>.
                           </p>
-                          <p className="text-[9px] leading-relaxed text-neutral-400 border-t border-neutral-850 pt-1.5">
-                            It <strong className="text-rose-300 font-medium">never reads the content</strong> or <strong className="text-rose-300 font-medium">who sent it</strong>. Zero access to messages, body text, or contacts.
+                          <p className="text-[9px] leading-relaxed text-neutral-500 border-t border-white/[0.06] pt-1.5">
+                            Message contents, subjects, and senders are never read or stored.
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-1 text-[8px] text-emerald-400 font-mono">
-                          <span>✓ 100% Client-side count only</span>
+                        <div className="flex items-center gap-1.5 text-[8.5px] text-neutral-400 font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+                          <span>Zero content access</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  /* 2. CONNECTED STATE: Live Counter, Actions & Controls */
-                  <div className="flex-1 flex flex-col justify-between py-1 px-1">
-                    {/* Top Bar: Connected Account Chip + Quick Actions */}
-                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80 mb-2 flex-shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-                        <span className="text-xs font-bold text-white tracking-tight truncate max-w-[170px]" title={mailConfig.email}>
+                  /* 2. CONNECTED STATE: Minimal Obsidian Inbox Counter */
+                  <div className="flex-1 flex flex-col justify-between py-0.5 px-0.5 min-h-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.07] mb-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.65)] flex-shrink-0" />
+                        <span className="text-[11px] font-semibold text-white tracking-tight truncate max-w-[180px]" title={mailConfig.email}>
                           {mailConfig.email || 'Gmail Connected'}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[8px] font-mono">
-                          Count-Only Active
+                        <span className="px-1.5 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-neutral-300 text-[8px] font-mono flex-shrink-0">
+                          Count-Only
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           type="button"
                           onClick={() => {
@@ -5709,17 +6514,17 @@ export default function DynamicIsland({
                               window.open('https://mail.google.com', '_blank');
                             }
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[9.5px] font-medium text-neutral-200 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
-                          title="Open Gmail inbox in your default web browser"
+                          className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.11] border border-white/[0.08] text-[9.5px] font-medium text-neutral-200 hover:text-white flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                          title="Open Gmail inbox in your browser"
                         >
-                          <span>Gmail</span>
-                          <span className="text-[8px]">↗</span>
+                          <span>Inbox</span>
+                          <span className="text-[8px] text-neutral-400">↗</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={handleDisconnectMail}
-                          className="px-2 py-1 rounded-lg bg-neutral-900 hover:bg-rose-500/20 border border-neutral-800 hover:border-rose-500/30 text-[9px] font-medium text-neutral-400 hover:text-rose-300 transition-all cursor-pointer active:scale-95"
+                          className="px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.09] border border-white/[0.07] text-[9px] font-medium text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
                           title="Disconnect Gmail account"
                         >
                           Disconnect
@@ -5727,54 +6532,53 @@ export default function DynamicIsland({
                       </div>
                     </div>
 
-                    {/* Main Body: 2 Wings */}
-                    <div className="flex-1 flex items-center justify-between gap-3 min-h-0">
-                      {/* Left Wing: Unread Counter KPI & Island Trigger */}
-                      <div className="flex-1 flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#14141a] to-[#0c0c0f] border border-neutral-800/90 shadow-sm h-full">
-                        <div className="flex items-center justify-between text-[10px] text-neutral-400 font-mono">
+                    {/* Main Body */}
+                    <div className="flex-1 flex items-stretch gap-2.5 min-h-0">
+                      {/* Left: Unread Counter */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between p-3 rounded-2xl bg-[#101014] border border-white/[0.07]">
+                        <div className="flex items-center justify-between text-[9px] text-neutral-500 font-mono">
                           <span>INBOX STATUS</span>
-                          <span className="text-emerald-400">● Realtime Sync</span>
+                          <span className="text-neutral-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                            Synced
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3 my-auto">
-                          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl shadow-[0_0_16px_rgba(244,63,94,0.25)] flex-shrink-0">
-                            ✉️
+                          <div className="w-11 h-11 rounded-2xl bg-white/[0.05] border border-white/[0.09] flex items-center justify-center text-white flex-shrink-0">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                            </svg>
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-black font-mono text-white tracking-tight">
+                              <span className="text-2xl font-bold font-mono tabular-nums text-white tracking-tight leading-none">
                                 {mailConfig.unreadCount}
                               </span>
-                              <span className="text-[11px] font-medium text-neutral-300">
+                              <span className="text-[11px] font-medium text-neutral-300 truncate">
                                 {mailConfig.unreadCount === 1 ? 'unread email' : 'unread emails'}
                               </span>
                             </div>
-                            <p className="text-[8.5px] text-neutral-400 font-mono mt-0.5">
-                              {mailConfig.unreadCount > 0 ? 'Waiting in your inbox' : 'All caught up! Zero unread'}
+                            <p className="text-[8.5px] text-neutral-500 font-mono mt-1">
+                              {mailConfig.unreadCount > 0 ? 'Waiting in your inbox' : 'All caught up'}
                             </p>
                           </div>
                         </div>
 
-                        {/* Interactive Notification Trigger: USER REQUESTED DEMO */}
-                        <div className="flex items-center gap-2 pt-1.5 border-t border-neutral-800/70">
+                        <div className="flex items-center gap-1.5 pt-2 border-t border-white/[0.06]">
                           <button
                             type="button"
                             onClick={() => {
-                              const nextCount = (mailConfig.unreadCount || 0) + 1;
-                              setMailConfig((prev) => ({
-                                ...prev,
-                                unreadCount: nextCount,
-                                lastChecked: Date.now(),
-                              }));
-                              setIndicatorTimestamps((t) => ({ ...t, mail: Date.now() }));
-                              // Trigger the collapsed island notification
-                              triggerMailAlert(1);
+                              if (window.electronAPI?.openExternalUrl) {
+                                window.electronAPI.openExternalUrl('https://mail.google.com');
+                              } else {
+                                window.open('https://mail.google.com', '_blank');
+                              }
                             }}
-                            className="flex-1 py-1.5 px-2 rounded-xl bg-gradient-to-r from-rose-500/25 to-orange-500/20 hover:from-rose-500/35 hover:to-orange-500/30 border border-rose-500/40 text-rose-200 text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
-                            title="Simulate receiving 1 new email to preview the collapsed island notification"
+                            className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                           >
-                            <span>🔔</span>
-                            <span>Test Notification (+1 New Email)</span>
+                            <span>Open Gmail</span>
+                            <span className="text-[9px]">↗</span>
                           </button>
 
                           {mailConfig.unreadCount > 0 && (
@@ -5783,8 +6587,8 @@ export default function DynamicIsland({
                               onClick={() => {
                                 setMailConfig((prev) => ({ ...prev, unreadCount: 0 }));
                               }}
-                              className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[9px] font-medium text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
-                              title="Mark all as read"
+                              className="px-2.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-[9.5px] font-medium text-neutral-300 hover:text-white transition-all cursor-pointer active:scale-95"
+                              title="Reset unread count"
                             >
                               Clear
                             </button>
@@ -5792,39 +6596,49 @@ export default function DynamicIsland({
                         </div>
                       </div>
 
-                      {/* Right Wing: Island Alert Preferences & Privacy Seal */}
-                      <div className="w-[195px] flex flex-col justify-between p-3 rounded-2xl bg-[#0f1117] border border-neutral-800/80 h-full">
+                      {/* Right: Alert Preferences & Privacy Seal */}
+                      <div className="w-[184px] flex-shrink-0 flex flex-col justify-between p-3 rounded-2xl bg-[#0d0d11] border border-white/[0.07]">
                         <div>
-                          <span className="text-[9px] font-mono tracking-wider text-neutral-400 uppercase">
-                            Island Alert Mode
+                          <span className="text-[8.5px] font-mono tracking-wider text-neutral-500 uppercase">
+                            Island Alerts
                           </span>
-                          
-                          <div className="mt-2 space-y-2">
-                            <label className="flex items-center justify-between text-[10px] text-neutral-300 cursor-pointer">
-                              <span>Pop-up on new email</span>
-                              <input
-                                type="checkbox"
-                                checked={mailConfig.notificationsEnabled}
-                                onChange={(e) => {
-                                  setMailConfig((prev) => ({
-                                    ...prev,
-                                    notificationsEnabled: e.target.checked,
-                                  }));
-                                }}
-                                className="accent-rose-500 w-3.5 h-3.5 rounded cursor-pointer"
-                              />
-                            </label>
 
-                            <p className="text-[8.5px] text-neutral-400 leading-snug">
-                              Island removes eyes to show <span className="text-rose-300 font-mono font-medium">1 New Email</span> for 3.5s when mail arrives.
+                          <div className="mt-2 space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMailConfig((prev) => ({
+                                  ...prev,
+                                  notificationsEnabled: !prev.notificationsEnabled,
+                                }));
+                              }}
+                              className="w-full flex items-center justify-between text-[10px] text-neutral-200 cursor-pointer"
+                            >
+                              <span>Pop-up alerts</span>
+                              <span
+                                className={`w-7 h-4 rounded-full p-0.5 transition-colors flex items-center ${
+                                  mailConfig.notificationsEnabled ? 'bg-white justify-end' : 'bg-white/[0.14] justify-start'
+                                }`}
+                              >
+                                <span
+                                  className={`w-3 h-3 rounded-full transition-colors ${
+                                    mailConfig.notificationsEnabled ? 'bg-black' : 'bg-neutral-400'
+                                  }`}
+                                />
+                              </span>
+                            </button>
+
+                            <p className="text-[8.5px] text-neutral-500 leading-snug">
+                              Briefly shows new mail count on the collapsed Island when mail arrives.
                             </p>
                           </div>
                         </div>
 
-                        {/* Privacy Confirmation Stamp */}
-                        <div className="p-2 rounded-xl bg-emerald-950/20 border border-emerald-500/25 flex items-start gap-1.5 text-[8.5px] text-emerald-300/90 leading-tight">
-                          <span className="text-xs">🛡️</span>
-                          <span>Zero Content Access: Only counts unread mail. Senders and text are never inspected.</span>
+                        <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-start gap-1.5 text-[8.5px] text-neutral-400 leading-tight">
+                          <svg className="w-3 h-3 text-neutral-300 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                          </svg>
+                          <span>Count-only mode. Senders and message text are never read.</span>
                         </div>
                       </div>
                     </div>
@@ -5836,22 +6650,28 @@ export default function DynamicIsland({
           </div>
 
           {/* ======================================================== */}
-          {/* BOTTOM DOCK (Zero Jitter, Perfectly Sized & Clickable)   */}
+          {/* BOTTOM DOCK (Centered, Modern Apple-Style Floating Dock) */}
           {/* ======================================================== */}
-          <div className="flex-shrink-0 w-full pt-1.5 relative z-10 select-none">
-            <div className="w-full flex items-center justify-between px-3 py-1 rounded-full bg-[#131316] border border-[#222226] shadow-lg">
+          <div className={`flex-shrink-0 w-full pt-1.5 relative z-10 select-none ${isWakingUp ? 'pop-in-card' : ''}`} style={{ '--i': 6 }}>
+            <div className="relative w-full flex items-center justify-center px-3 py-1 rounded-full bg-[#131316] border border-[#222226] shadow-lg">
               
-              <div className="flex items-center justify-between flex-1 pr-2 gap-1">
+              <div className="flex items-center justify-center gap-1.5 mx-auto">
                 {/* 1. Home */}
                 <button
                   type="button"
                   onClick={() => { setActiveTab('home'); setAiResponseCard(null); }}
                   title="Home Cockpit & Telemetry"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center border ${
                     activeTab === 'home'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'home' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -5864,11 +6684,17 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('features'); setAiResponseCard(null); }}
                   title="AI Tools & Features Suite"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center border ${
                     activeTab === 'features'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'features' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -5880,11 +6706,17 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('music'); setAiResponseCard(null); }}
                   title="Music Player"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center border ${
                     activeTab === 'music'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'music' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 18V5l12-2v13" />
@@ -5898,11 +6730,17 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => setActiveTab('ai')}
                   title="Eyeland AI Assistant"
-                  className={`px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all cursor-pointer active:scale-95 ${
+                  className={`px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-200 cursor-pointer active:scale-90 border ${
                     activeTab === 'ai'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'bg-neutral-900/80 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700'
+                      ? 'scale-105'
+                      : 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 hover:-translate-y-0.5'
                   }`}
+                  style={activeTab === 'ai' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -5915,11 +6753,17 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('focus'); setAiResponseCard(null); }}
                   title="Focus Mode & Pomodoro"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center relative border ${
                     activeTab === 'focus'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'focus' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" />
@@ -5929,8 +6773,8 @@ export default function DynamicIsland({
                     <span 
                       className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full animate-pulse shadow-sm"
                       style={{ 
-                        backgroundColor: focusPhase === 'work' ? '#f59e0b' : '#10b981',
-                        boxShadow: `0 0 6px ${focusPhase === 'work' ? '#f59e0b' : '#10b981'}`
+                        backgroundColor: focusPhase === 'work' ? '#f59e0b' : (theme.accent || '#10b981'),
+                        boxShadow: `0 0 6px ${focusPhase === 'work' ? '#f59e0b' : (theme.accent || '#10b981')}`
                       }}
                     />
                   )}
@@ -5941,18 +6785,24 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('shelf'); setAiResponseCard(null); }}
                   title="Staging Shelf"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center relative border ${
                     activeTab === 'shelf'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'shelf' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
                     <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
                   </svg>
                   {stagedFiles.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-indigo-500 text-[7px] font-bold text-white flex items-center justify-center pointer-events-none shadow-sm">
+                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-indigo-500 text-[7px] font-bold text-white flex items-center justify-center pointer-events-none shadow-sm animate-scaleIn">
                       {stagedFiles.length}
                     </span>
                   )}
@@ -5963,18 +6813,27 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('clipboard'); setAiResponseCard(null); }}
                   title="Clipboard History"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center relative border ${
                     activeTab === 'clipboard'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'clipboard' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                   </svg>
                   {clipboardItems.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 text-[7px] font-bold text-black flex items-center justify-center pointer-events-none shadow-sm">
+                    <span
+                      className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full text-[7px] font-bold text-black flex items-center justify-center pointer-events-none shadow-sm animate-scaleIn"
+                      style={{ backgroundColor: theme.accent || '#10b981' }}
+                    >
                       {clipboardItems.length}
                     </span>
                   )}
@@ -5985,11 +6844,17 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('notes'); setAiResponseCard(null); }}
                   title="Scratchpad & Notes"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center relative border ${
                     activeTab === 'notes'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border-transparent'
                   }`}
+                  style={activeTab === 'notes' ? {
+                    backgroundColor: theme.dockBg || 'rgba(16, 185, 129, 0.18)',
+                    borderColor: theme.border || 'rgba(52, 211, 153, 0.45)',
+                    color: theme.accent || theme.color,
+                    boxShadow: theme.dockShadow || '0 0 12px rgba(52, 211, 153, 0.35)',
+                  } : undefined}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -5998,7 +6863,13 @@ export default function DynamicIsland({
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                   {totalNotesLength > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] pointer-events-none" />
+                    <span
+                      className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full pointer-events-none animate-scaleIn"
+                      style={{
+                        backgroundColor: theme.accent || '#34d399',
+                        boxShadow: `0 0 6px ${theme.accent || 'rgba(52,211,153,0.8)'}`,
+                      }}
+                    />
                   )}
                 </button>
 
@@ -6007,10 +6878,10 @@ export default function DynamicIsland({
                   type="button"
                   onClick={() => { setActiveTab('mail'); setAiResponseCard(null); }}
                   title="Gmail & Unread Email Alerts"
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                  className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center relative ${
                     activeTab === 'mail'
-                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.3)]'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                      ? 'bg-[#0e3b24] border border-[#1b6b3e] text-[#4ade80] shadow-[0_0_12px_rgba(74,222,128,0.35)] scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 hover:-translate-y-0.5 border border-transparent'
                   }`}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -6018,43 +6889,41 @@ export default function DynamicIsland({
                     <polyline points="22,6 12,13 2,6" />
                   </svg>
                   {mailConfig.connected && mailConfig.unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] animate-scaleIn" />
                   )}
                 </button>
               </div>
 
-              {/* Vertical Divider */}
-              <div className="h-4 w-px bg-neutral-800/90 flex-shrink-0" />
-
               {/* Far Right: Volume / Sound Mute Button */}
-              <button
-                type="button"
-                onClick={() => setIsSoundMuted(!isSoundMuted)}
-                title={isSoundMuted ? 'Sound Effects Muted (Click to Unmute)' : 'Sound Effects Active (Click to Mute)'}
-                className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 ml-1.5 flex items-center justify-center ${
-                  isSoundMuted
-                    ? 'text-rose-400 bg-rose-500/15 border border-rose-500/25'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
-                }`}
-              >
-                {isSoundMuted ? (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                  </svg>
-                )}
-              </button>
+              <div className="absolute right-2.5 flex items-center gap-1.5">
+                <div className="h-3.5 w-px bg-neutral-800" />
+                <button
+                  type="button"
+                  onClick={() => setIsSoundMuted(!isSoundMuted)}
+                  title={isSoundMuted ? 'Sound Effects Muted (Click to Unmute)' : 'Sound Effects Active (Click to Mute)'}
+                  className={`p-1.5 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
+                    isSoundMuted
+                      ? 'text-rose-400 bg-rose-500/15 border border-rose-500/25'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 border border-transparent'
+                  }`}
+                >
+                  {isSoundMuted ? (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <line x1="23" y1="9" x2="17" y2="15" />
+                      <line x1="17" y1="9" x2="23" y2="15" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    </svg>
+                  )}
+                </button>
+              </div>
 
             </div>
           </div>
-          </>
-          )}
 
         </div>
       )}

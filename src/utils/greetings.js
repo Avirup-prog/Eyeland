@@ -26,7 +26,7 @@ const GREETING_POOLS = {
       shortcut: "Let's build",
     },
     {
-      headline: "Rise and shine, {name}! ✨",
+      headline: "Rise and shine, {name}!",
       subtext: "Ready to conquer today's goals?",
       shortcut: "Start fresh",
     },
@@ -41,7 +41,7 @@ const GREETING_POOLS = {
       shortcut: "Check tasks",
     },
     {
-      headline: "Good morning, {name}! ☀️",
+      headline: "Good morning, {name}!",
       subtext: "Eyeland is powered up and ready for you.",
       shortcut: "What's new",
     },
@@ -53,7 +53,7 @@ const GREETING_POOLS = {
       shortcut: "Continue",
     },
     {
-      headline: "Afternoon, {name}! 🚀",
+      headline: "Afternoon, {name}!",
       subtext: "Keeping the momentum rolling strong.",
       shortcut: "Flow state",
     },
@@ -63,7 +63,7 @@ const GREETING_POOLS = {
       shortcut: "Focus now",
     },
     {
-      headline: "Good afternoon, {name}! ⚡",
+      headline: "Good afternoon, {name}!",
       subtext: "Need a quick summary or scan? I'm ready.",
       shortcut: "Scan screen",
     },
@@ -80,7 +80,7 @@ const GREETING_POOLS = {
       shortcut: "Wrap up",
     },
     {
-      headline: "Evening, {name}! 🌙",
+      headline: "Evening, {name}!",
       subtext: "Let's close out today on a high note.",
       shortcut: "Review day",
     },
@@ -90,7 +90,7 @@ const GREETING_POOLS = {
       shortcut: "Finish strong",
     },
     {
-      headline: "Good evening, {name}! ✨",
+      headline: "Good evening, {name}!",
       subtext: "Wind-down mode or late-night creativity?",
       shortcut: "Night mode",
     },
@@ -107,7 +107,7 @@ const GREETING_POOLS = {
       shortcut: "Night focus",
     },
     {
-      headline: "Late night session, {name}! 🌌",
+      headline: "Late night session, {name}!",
       subtext: "Quiet hours, deep focus. What are we crafting?",
       shortcut: "Deep work",
     },
@@ -117,7 +117,7 @@ const GREETING_POOLS = {
       shortcut: "Stay chill",
     },
     {
-      headline: "Late night flow, {name}! ✨",
+      headline: "Late night flow, {name}!",
       subtext: "The world is quiet—let's make some magic.",
       shortcut: "Code away",
     },
