@@ -1839,9 +1839,14 @@ export default function DynamicIsland({
   const [isSnippingMode, setIsSnippingMode] = useState(false);
   const isSnippingActive = isSnippingMode || isSnippingModeProp;
   const isWakingUp = wakeStage !== 'done';
+  const hasPendingUpdate = Boolean(
+    isOnline &&
+    !isUpdateDismissed &&
+    (updateStatus.status === 'available' || updateStatus.status === 'downloading' || updateStatus.status === 'ready' || updateReady)
+  );
   const isExpanded = (
     wakeStage === 'full' ||
-    ((isHovered || isPinned || isGreetingActive) && wakeStage !== 'seed' && wakeStage !== 'off' && wakeStage !== 'greet')
+    (((!hasPendingUpdate && isHovered) || isPinned || isGreetingActive) && wakeStage !== 'seed' && wakeStage !== 'off' && wakeStage !== 'greet')
   ) && !isSnippingActive;
 
   // Live Telemetry Smooth Count-Up Animation (Option A: 0% -> Live values over 1.3s)
@@ -1876,12 +1881,7 @@ export default function DynamicIsland({
     }
   }, [wakeStage]);
 
-  const isUpdateAlertMode = Boolean(
-    !isExpanded &&
-    isOnline &&
-    !isUpdateDismissed &&
-    (updateStatus.status === 'available' || updateStatus.status === 'downloading' || updateStatus.status === 'ready' || updateReady)
-  );
+  const isUpdateAlertMode = Boolean(!isExpanded && hasPendingUpdate);
 
   const handleInstallUpdateClick = (e) => {
     e?.stopPropagation();
@@ -3379,7 +3379,7 @@ export default function DynamicIsland({
                 type="button"
                 onClick={handleInstallUpdateClick}
                 disabled={isInstallingUpdate && updateStatus.status !== 'ready' && !updateReady}
-                className="px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md cursor-pointer disabled:opacity-50"
+                className="px-3 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 active:scale-95 text-black text-[10px] font-extrabold flex items-center gap-1 transition-all shadow-md cursor-pointer disabled:opacity-50"
                 title="Click to install update"
               >
                 <IconDownload className="w-2.5 h-2.5 stroke-[2.5]" />
@@ -3765,6 +3765,23 @@ export default function DynamicIsland({
                 <span className="text-[10px] text-neutral-400 font-mono">
                   {fullDateTime || currentTime || 'Tue 3 Nov 2026 9:37 PM'}
                 </span>
+                {hasPendingUpdate && (
+                  <button
+                    type="button"
+                    onClick={handleInstallUpdateClick}
+                    className="ml-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-black border border-emerald-500/40 text-[9.5px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-sm animate-pulse"
+                    title="Click to install update"
+                  >
+                    <IconSparkles className="w-2.5 h-2.5 text-emerald-400" />
+                    <span>
+                      {updateStatus.status === 'downloading'
+                        ? `${updateStatus.percent || 0}%`
+                        : updateStatus.status === 'ready' || updateReady
+                        ? `Restart v${updateStatus.version || updateReady}`
+                        : `Install v${updateStatus.version || '1.0.1'}`}
+                    </span>
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span 
@@ -3897,10 +3914,14 @@ export default function DynamicIsland({
                   </button>
 
                   <button
-                    onClick={handleCheckForUpdates}
+                    onClick={
+                      updateStatus.status === 'available' || updateStatus.status === 'ready' || updateReady
+                        ? handleInstallUpdateClick
+                        : handleCheckForUpdates
+                    }
                     disabled={updateStatus.status === 'checking' || updateStatus.status === 'downloading'}
                     className={`w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
-                      updateStatus.status === 'ready' || updateReady
+                      updateStatus.status === 'available' || updateStatus.status === 'ready' || updateReady
                         ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25'
                         : updateStatus.status === 'up-to-date'
                         ? 'text-emerald-400 hover:bg-white/10'
@@ -3935,6 +3956,8 @@ export default function DynamicIsland({
                         ? `Downloading ${updateStatus.percent || 0}%`
                         : updateStatus.status === 'ready' || updateReady
                         ? `Install v${updateStatus.version || updateReady}`
+                        : updateStatus.status === 'available'
+                        ? `Install v${updateStatus.version || '1.0.1'}`
                         : updateStatus.status === 'up-to-date'
                         ? t.upToDate
                         : updateStatus.status === 'dev-mode'
