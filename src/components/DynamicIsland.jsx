@@ -327,68 +327,6 @@ export default function DynamicIsland({
     }
   }, []);
 
-  const isUpdateAlertMode = Boolean(
-    !isExpanded &&
-    isOnline &&
-    !isUpdateDismissed &&
-    (updateStatus.status === 'available' || updateStatus.status === 'downloading' || updateStatus.status === 'ready' || updateReady)
-  );
-
-  const handleInstallUpdateClick = (e) => {
-    e?.stopPropagation();
-    if (!isOnline) {
-      alert('Active internet connection required to download updates.');
-      return;
-    }
-    setIsInstallingUpdate(true);
-    if (updateStatus.status === 'ready' || updateReady) {
-      closeAllDropdowns();
-      window.electronAPI?.restartAndInstallUpdate?.();
-      return;
-    }
-    if (window.electronAPI?.simulateDownloadAndInstall && updateStatus.status === 'available') {
-      window.electronAPI.simulateDownloadAndInstall(updateStatus.version || '1.0.1');
-    }
-    if (window.electronAPI?.downloadAndInstallUpdate) {
-      window.electronAPI.downloadAndInstallUpdate();
-    } else if (window.electronAPI?.restartAndInstallUpdate) {
-      window.electronAPI.restartAndInstallUpdate();
-    }
-  };
-
-  const handleCheckForUpdates = async () => {
-    if (updateStatus.status === 'ready' || updateReady) {
-      closeAllDropdowns();
-      window.electronAPI?.restartAndInstallUpdate?.();
-      return;
-    }
-    if (updateStatus.status === 'checking' || updateStatus.status === 'downloading') return;
-    setUpdateStatus({ status: 'checking', version: null, percent: 0 });
-    if (window.electronAPI?.checkForUpdates) {
-      try {
-        const res = await window.electronAPI.checkForUpdates();
-        if (res?.status === 'dev-mode') {
-          setUpdateStatus({ status: 'dev-mode', version: null, percent: 0 });
-          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
-          updateResetTimerRef.current = setTimeout(() => {
-            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
-          }, 3500);
-        } else if (res?.status === 'error') {
-          setUpdateStatus({ status: 'error', version: null, percent: 0 });
-          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
-          updateResetTimerRef.current = setTimeout(() => {
-            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
-          }, 3500);
-        }
-      } catch (_) {
-        setUpdateStatus({ status: 'error', version: null, percent: 0 });
-        if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
-        updateResetTimerRef.current = setTimeout(() => {
-          setUpdateStatus({ status: 'idle', version: null, percent: 0 });
-        }, 3500);
-      }
-    }
-  };
 
   // Real System Hardware & Network Telemetry State
   const [telemetry, setTelemetry] = useState({
@@ -1937,6 +1875,69 @@ export default function DynamicIsland({
       setTelemetryAnimProgress(1);
     }
   }, [wakeStage]);
+
+  const isUpdateAlertMode = Boolean(
+    !isExpanded &&
+    isOnline &&
+    !isUpdateDismissed &&
+    (updateStatus.status === 'available' || updateStatus.status === 'downloading' || updateStatus.status === 'ready' || updateReady)
+  );
+
+  const handleInstallUpdateClick = (e) => {
+    e?.stopPropagation();
+    if (!isOnline) {
+      alert('Active internet connection required to download updates.');
+      return;
+    }
+    setIsInstallingUpdate(true);
+    if (updateStatus.status === 'ready' || updateReady) {
+      closeAllDropdowns();
+      window.electronAPI?.restartAndInstallUpdate?.();
+      return;
+    }
+    if (window.electronAPI?.simulateDownloadAndInstall && updateStatus.status === 'available') {
+      window.electronAPI.simulateDownloadAndInstall(updateStatus.version || '1.0.1');
+    }
+    if (window.electronAPI?.downloadAndInstallUpdate) {
+      window.electronAPI.downloadAndInstallUpdate();
+    } else if (window.electronAPI?.restartAndInstallUpdate) {
+      window.electronAPI.restartAndInstallUpdate();
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    if (updateStatus.status === 'ready' || updateReady) {
+      closeAllDropdowns();
+      window.electronAPI?.restartAndInstallUpdate?.();
+      return;
+    }
+    if (updateStatus.status === 'checking' || updateStatus.status === 'downloading') return;
+    setUpdateStatus({ status: 'checking', version: null, percent: 0 });
+    if (window.electronAPI?.checkForUpdates) {
+      try {
+        const res = await window.electronAPI.checkForUpdates();
+        if (res?.status === 'dev-mode') {
+          setUpdateStatus({ status: 'dev-mode', version: null, percent: 0 });
+          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+          updateResetTimerRef.current = setTimeout(() => {
+            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+          }, 3500);
+        } else if (res?.status === 'error') {
+          setUpdateStatus({ status: 'error', version: null, percent: 0 });
+          if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+          updateResetTimerRef.current = setTimeout(() => {
+            setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+          }, 3500);
+        }
+      } catch (_) {
+        setUpdateStatus({ status: 'error', version: null, percent: 0 });
+        if (updateResetTimerRef.current) clearTimeout(updateResetTimerRef.current);
+        updateResetTimerRef.current = setTimeout(() => {
+          setUpdateStatus({ status: 'idle', version: null, percent: 0 });
+        }, 3500);
+      }
+    }
+  };
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();

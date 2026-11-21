@@ -1,6 +1,6 @@
 {
   "name": "eyeland",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Eyeland - The living desktop bezel companion and assistant",
   "main": "electron/main.cjs",
   "type": "module",

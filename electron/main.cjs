@@ -6,6 +6,13 @@ const fs = require('fs');
 const http = require('http');
 const dns = require('dns');
 
+// Enforce single instance to prevent orphan background processes & lock contention
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+  process.exit(0);
+}
+
 // Force IPv4-first DNS resolution to eliminate Windows IPv6 'fetch failed' errors
 try {
   if (dns && dns.setDefaultResultOrder) {
@@ -1518,6 +1525,13 @@ app.whenReady().then(() => {
       autoUpdater.checkForUpdatesAndNotify().catch((e) => console.warn('[autoUpdater] Startup check:', e.message));
     }, 6000);
   }
+  app.on('second-instance', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      mainWindow.show();
+    }
+  });
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
