@@ -34,7 +34,7 @@ try {
   // ignore
 }
 
-const { getWifiData, getBluetoothData, getBatteryData, getCameraAndMicUsage, getFullTelemetry } = require('./systemInfo.cjs');
+const { getWifiData, getBluetoothData, getBatteryData, getCameraAndMicUsage, getFullTelemetry, invalidateBluetoothCache } = require('./systemInfo.cjs');
 const { getLiveMedia, onMediaChange, sendMediaControl, searchTrackMetadata, getSongLyrics, stopMediaDaemon } = require('./mediaService.cjs');
 const { onHardwareHud, setVolume, setMute, setBrightness, getHardwareState, stopHardwareDaemon } = require('./hardwareService.cjs');
 const geminiService = require('./geminiService.cjs');
@@ -507,6 +507,7 @@ function createWindow() {
   mainWindow.hookWindowMessage(0x0219, (wParam, lParam) => {
     if (deviceChangeDebounce) clearTimeout(deviceChangeDebounce);
     deviceChangeDebounce = setTimeout(() => {
+      invalidateBluetoothCache();
       checkPeripheralConnections();
       deviceChangeDebounce = null;
     }, 400);
@@ -566,17 +567,18 @@ function createWindow() {
   const getPerfTimings = (perf) => {
     switch (perf) {
       case 'light':
-        return { cursorMs: 65, telemetryMs: 5000 };
+        return { cursorMs: 65, telemetryMs: 6000 };
       case 'automatic':
-        return { cursorMs: 25, telemetryMs: 3000 };
+        return { cursorMs: 35, telemetryMs: 4000 };
       case 'max':
-        return { cursorMs: 8, telemetryMs: 1500 };
+        return { cursorMs: 16, telemetryMs: 2500 };
       case 'smooth':
       default:
-        return { cursorMs: 16, telemetryMs: 2200 };
+        return { cursorMs: 30, telemetryMs: 3500 };
     }
   };
 
+  let lastFarCursorTick = 0;
   const applyPerformanceTimers = () => {
     if (cursorPollInterval) clearInterval(cursorPollInterval);
     if (telemetryInterval) clearInterval(telemetryInterval);
@@ -589,10 +591,22 @@ function createWindow() {
 
       // Skip IPC message & React re-render cycle if the mouse has not moved
       if (cursorPos.x === lastCursorX && cursorPos.y === lastCursorY) return;
-      lastCursorX = cursorPos.x;
-      lastCursorY = cursorPos.y;
 
       const bounds = mainWindow.getBounds();
+      const islandCenterX = bounds.x + bounds.width / 2;
+      const isNearIsland = Math.abs(cursorPos.x - islandCenterX) <= 320 && (cursorPos.y - bounds.y) <= 380;
+
+      // Throttle cursor events when mouse is far away from island to 150ms to save CPU
+      const now = Date.now();
+      if (!isNearIsland && (now - lastFarCursorTick < 150)) {
+        return;
+      }
+      if (!isNearIsland) {
+        lastFarCursorTick = now;
+      }
+
+      lastCursorX = cursorPos.x;
+      lastCursorY = cursorPos.y;
 
       mainWindow.webContents.send('global-cursor', {
         cursorX: cursorPos.x,
@@ -609,9 +623,6 @@ function createWindow() {
       try {
         const telemetry = await getFullTelemetry();
         broadcast('telemetry-update', telemetry);
-
-        // Periodic safety check for peripheral connections (supplements Win32 WM_DEVICECHANGE)
-        checkPeripheralConnections();
       } catch (err) {
         // ignore
       }
@@ -709,6 +720,13 @@ function createWindow() {
 
   // Prime initial peripheral baseline
   checkPeripheralConnections();
+
+  // Lazy peripheral scan fallback once every 60 seconds (supplements native WM_DEVICECHANGE)
+  setInterval(() => {
+    if (!isPeripheralScanRunning) {
+      checkPeripheralConnections();
+    }
+  }, 60000);
 
   // Real-Time Hardware Volume & Screen Brightness HUD Listener
   const unsubscribeHardware = onHardwareHud((hudData) => {

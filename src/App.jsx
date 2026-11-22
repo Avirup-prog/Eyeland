@@ -431,8 +431,15 @@ export default function App() {
           // Follow cursor gaze within detection radius
           calculateGaze(data.cursorX, data.cursorY, islandCenterX, islandCenterY);
         } else {
-          // Outside detection radius: relax eyes to neutral forward gaze
-          setEyeTracking({ tiltDeg: 0, offsetX: 0, offsetY: 0 });
+          // Outside detection radius: relax eyes to neutral forward gaze (only once to avoid re-render loops)
+          if (
+            lastGazeRef.current.tiltDeg !== 0 ||
+            lastGazeRef.current.offsetX !== 0 ||
+            lastGazeRef.current.offsetY !== 0
+          ) {
+            lastGazeRef.current = { tiltDeg: 0, offsetX: 0, offsetY: 0 };
+            setEyeTracking({ tiltDeg: 0, offsetX: 0, offsetY: 0 });
+          }
         }
 
         const isExp = (isHoveredRef.current || isPinnedRef.current || wakeStageRef.current === 'full') && !isSnippingModeRef.current;

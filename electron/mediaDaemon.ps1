@@ -20,13 +20,23 @@ function Await($WinRtTask, $ResultType) {
 [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType = WindowsRuntime] | Out-Null
 $mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
 
+$lastOutputJson = ""
+$lastSpotifyProcCheck = 0
+$cachedSpotifyProcesses = $null
+
 if (-not $mgr) {
-    Write-Output '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+    $lastOutputJson = '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+    Write-Output $lastOutputJson
 }
 
-# Continuous loop reading media state with sub-second precision
+# Continuous loop reading media state with intelligent throttling
 while ($true) {
+    $currentIsPlaying = $false
     try {
+        if (-not $mgr) {
+            $mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+        }
+
         $allSessions = if ($mgr) { $mgr.GetSessions() } else { $null }
         $targetSession = $null
 
@@ -56,6 +66,7 @@ while ($true) {
             $isSpotify = ($targetSession.SourceAppUserModelId -match 'Spotify')
             $statusStr = if ($info) { $info.PlaybackStatus.ToString() } else { 'Closed' }
             $isPlaying = ($statusStr -eq 'Playing')
+            $currentIsPlaying = $isPlaying
 
             if ($props -and $props.Title) {
                 $dur = if ($tl -and $tl.EndTime.TotalSeconds -gt 0) { [Math]::Round($tl.EndTime.TotalSeconds) } else { 0 }
@@ -69,12 +80,10 @@ while ($true) {
                 $pos = if ($tl) {
                     if ($dur -gt 0) {
                         [Math]::Max(0, [Math]::Min($dur, [Math]::Round($tl.Position.TotalSeconds + $elapsed, 1)))
-                    } else {
-                        [Math]::Max(0, [Math]::Round($tl.Position.TotalSeconds + $elapsed, 1))
-                    }
+                    } else { 0 }
                 } else { 0 }
 
-                [PSCustomObject]@{
+                $outObj = [PSCustomObject]@{
                     isPlaying = $isPlaying
                     title = $props.Title
                     artist = $props.Artist
@@ -84,12 +93,28 @@ while ($true) {
                     position = $pos
                     duration = $dur
                 } | ConvertTo-Json -Compress
+
+                if ($outObj -ne $lastOutputJson) {
+                    $lastOutputJson = $outObj
+                    Write-Output $outObj
+                }
             } else {
-                Write-Output '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+                $idleJson = '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+                if ($idleJson -ne $lastOutputJson) {
+                    $lastOutputJson = $idleJson
+                    Write-Output $idleJson
+                }
             }
         } else {
             # Secondary Fallback: Spotify Window Title if GSMTC session closed
-            $spotProcesses = Get-Process -Name Spotify -ErrorAction SilentlyContinue
+            # Throttle Get-Process Spotify check to once every 3 seconds to preserve CPU
+            $tick = [Environment]::TickCount
+            if (($tick - $lastSpotifyProcCheck) -gt 3000 -or $lastSpotifyProcCheck -eq 0) {
+                $lastSpotifyProcCheck = $tick
+                $cachedSpotifyProcesses = Get-Process -Name Spotify -ErrorAction SilentlyContinue
+            }
+
+            $spotProcesses = $cachedSpotifyProcesses
             $foundProc = $false
             if ($spotProcesses) {
                 $playingProc = $spotProcesses | Where-Object { 
@@ -106,7 +131,8 @@ while ($true) {
                     if ($splitIdx -gt 0) {
                         $artist = $rawTitle.Substring(0, $splitIdx).Trim()
                         $title = $rawTitle.Substring($splitIdx + 3).Trim()
-                        [PSCustomObject]@{
+                        $currentIsPlaying = $true
+                        $outObj = [PSCustomObject]@{
                             isPlaying = $true
                             title = $title
                             artist = $artist
@@ -116,17 +142,34 @@ while ($true) {
                             position = $null
                             duration = $null
                         } | ConvertTo-Json -Compress
+
+                        if ($outObj -ne $lastOutputJson) {
+                            $lastOutputJson = $outObj
+                            Write-Output $outObj
+                        }
                     }
                 }
             }
             if (-not $foundProc) {
-                Write-Output '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+                $idleJson = '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+                if ($idleJson -ne $lastOutputJson) {
+                    $lastOutputJson = $idleJson
+                    Write-Output $idleJson
+                }
             }
         }
     } catch {
-        Write-Output '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+        $idleJson = '{"isPlaying":false,"status":"no_session","isNativeSpotify":false}'
+        if ($idleJson -ne $lastOutputJson) {
+            $lastOutputJson = $idleJson
+            Write-Output $idleJson
+        }
     }
 
-    # High frequency 250ms loop for zero-delay synchronization
-    Start-Sleep -Milliseconds 250
+    # High performance dynamic sleep: 400ms when actively playing, 1000ms when idle
+    if ($currentIsPlaying) {
+        Start-Sleep -Milliseconds 400
+    } else {
+        Start-Sleep -Milliseconds 1000
+    }
 }

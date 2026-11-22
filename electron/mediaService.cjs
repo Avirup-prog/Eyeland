@@ -273,9 +273,11 @@ function startMediaDaemon() {
 
           notifyMediaListeners();
         } else if (raw.status === 'no_session') {
-          currentMediaState = { isPlaying: false, status: 'no_session', isNativeSpotify: false };
-          currentTrackKey = '';
-          notifyMediaListeners();
+          if (currentMediaState.status !== 'no_session' || currentMediaState.isPlaying) {
+            currentMediaState = { isPlaying: false, status: 'no_session', isNativeSpotify: false };
+            currentTrackKey = '';
+            notifyMediaListeners();
+          }
         }
       } catch (err) {}
     });

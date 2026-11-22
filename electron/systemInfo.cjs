@@ -31,12 +31,26 @@ function getLiveCpuLoad() {
   return Math.max(1, Math.min(100, load));
 }
 
-// 1. Real Wi-Fi Query via netsh
-function getWifiData() {
+// 1. Real Wi-Fi Query via netsh (with 15s cache and on-demand network scanning)
+let cachedWifiData = null;
+let lastWifiFetchTime = 0;
+let isWifiFetchInFlight = false;
+
+function getWifiData(scanAvailableNetworks = false) {
+  const now = Date.now();
+  if (!scanAvailableNetworks && cachedWifiData && (now - lastWifiFetchTime < 15000)) {
+    return Promise.resolve(cachedWifiData);
+  }
+  if (isWifiFetchInFlight && cachedWifiData) {
+    return Promise.resolve(cachedWifiData);
+  }
+
+  isWifiFetchInFlight = true;
   return new Promise((resolve) => {
     exec('netsh wlan show interfaces', (err, stdout) => {
+      isWifiFetchInFlight = false;
       if (err || !stdout) {
-        return resolve({
+        const fallback = {
           connected: false,
           ssid: 'Disconnected',
           signal: 0,
@@ -45,7 +59,10 @@ function getWifiData() {
           band: '2.4 GHz',
           adapter: 'Wireless Interface',
           availableNetworks: [],
-        });
+        };
+        cachedWifiData = fallback;
+        lastWifiFetchTime = Date.now();
+        return resolve(fallback);
       }
 
       const lines = stdout.split(/\r?\n/);
@@ -66,7 +83,24 @@ function getWifiData() {
       const band = getVal('Band') || '2.4 GHz';
       const desc = getVal('Description') || 'MediaTek Wi-Fi 6';
 
-      // Scan available networks
+      const baseResult = {
+        connected: isConnected,
+        ssid: isConnected ? ssid : 'Disconnected',
+        signal: signalInt,
+        speed: `${rxRate} Mbps`,
+        radioType: radioType.includes('802.11ax') ? 'Wi-Fi 6 (802.11ax)' : radioType,
+        band,
+        adapter: desc,
+        availableNetworks: cachedWifiData?.availableNetworks || [{ ssid, connected: isConnected }],
+      };
+
+      // Only perform heavy radio frequency scanning if user explicitly requested network scan
+      if (!scanAvailableNetworks) {
+        cachedWifiData = baseResult;
+        lastWifiFetchTime = Date.now();
+        return resolve(baseResult);
+      }
+
       exec('netsh wlan show networks', (netErr, netStdout) => {
         const available = [];
         if (!netErr && netStdout) {
@@ -83,23 +117,34 @@ function getWifiData() {
           });
         }
 
-        resolve({
-          connected: isConnected,
-          ssid: isConnected ? ssid : 'Disconnected',
-          signal: signalInt,
-          speed: `${rxRate} Mbps`,
-          radioType: radioType.includes('802.11ax') ? 'Wi-Fi 6 (802.11ax)' : radioType,
-          band,
-          adapter: desc,
-          availableNetworks: available.length > 0 ? available : [{ ssid, connected: isConnected }],
-        });
+        baseResult.availableNetworks = available.length > 0 ? available : [{ ssid, connected: isConnected }];
+        cachedWifiData = baseResult;
+        lastWifiFetchTime = Date.now();
+        resolve(baseResult);
       });
     });
   });
 }
 
-// 2. Real Bluetooth Query via PowerShell
-function getBluetoothData() {
+// 2. Real Bluetooth Query via PowerShell (Cached for 30s or invalidated on WM_DEVICECHANGE)
+let cachedBluetoothData = null;
+let lastBluetoothFetchTime = 0;
+let isBluetoothFetchInFlight = false;
+
+function invalidateBluetoothCache() {
+  lastBluetoothFetchTime = 0;
+}
+
+function getBluetoothData(force = false) {
+  const now = Date.now();
+  if (!force && cachedBluetoothData && (now - lastBluetoothFetchTime < 30000)) {
+    return Promise.resolve(cachedBluetoothData);
+  }
+  if (isBluetoothFetchInFlight && cachedBluetoothData) {
+    return Promise.resolve(cachedBluetoothData);
+  }
+
+  isBluetoothFetchInFlight = true;
   return new Promise((resolve) => {
     const ps = `
       $bt = Get-PnpDevice -Class Bluetooth -Status OK -PresentOnly |
@@ -118,7 +163,8 @@ function getBluetoothData() {
       if ($bt) { @($bt) | ConvertTo-Json -Compress } else { '[]' }
     `;
     const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-    exec(`powershell -NoProfile -EncodedCommand ${encoded}`, (err, stdout) => {
+    exec(`powershell -NoProfile -EncodedCommand ${encoded}`, { timeout: 8000 }, (err, stdout) => {
+      isBluetoothFetchInFlight = false;
       let adapterPresent = true;
       const devices = [];
 
@@ -156,27 +202,44 @@ function getBluetoothData() {
         }
       }
 
-      resolve({
+      const result = {
         enabled: adapterPresent,
         adapter: 'MediaTek Bluetooth Adapter',
-        devices: devices.length > 0 ? devices : [
+        devices: devices.length > 0 ? devices : (cachedBluetoothData?.devices || [
           { id: 1, name: 'WH-CH520', type: 'headphones', connected: false },
           { id: 2, name: 'Airdopes 311 Pro', type: 'headphones', connected: false },
-        ],
-      });
+        ]),
+      };
+      cachedBluetoothData = result;
+      lastBluetoothFetchTime = Date.now();
+      resolve(result);
     });
   });
 }
 
-// 3. Real Battery Query
-function getBatteryData() {
+// 3. Real Battery Query (Cached for 30s)
+let cachedBatteryData = null;
+let lastBatteryFetchTime = 0;
+let isBatteryFetchInFlight = false;
+
+function getBatteryData(force = false) {
+  const now = Date.now();
+  if (!force && cachedBatteryData && (now - lastBatteryFetchTime < 30000)) {
+    return Promise.resolve(cachedBatteryData);
+  }
+  if (isBatteryFetchInFlight && cachedBatteryData) {
+    return Promise.resolve(cachedBatteryData);
+  }
+
+  isBatteryFetchInFlight = true;
   return new Promise((resolve) => {
     const ps = 'Get-CimInstance Win32_Battery | Select-Object EstimatedChargeRemaining, BatteryStatus | ConvertTo-Json';
     const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-    exec(`powershell -NoProfile -EncodedCommand ${encoded}`, { timeout: 3500 }, (err, stdout) => {
-      let percent = 100;
-      let isCharging = true;
-      let statusText = 'AC Powered';
+    exec(`powershell -NoProfile -EncodedCommand ${encoded}`, { timeout: 4000 }, (err, stdout) => {
+      isBatteryFetchInFlight = false;
+      let percent = cachedBatteryData?.percent ?? 100;
+      let isCharging = cachedBatteryData?.isCharging ?? true;
+      let statusText = cachedBatteryData?.statusText ?? 'AC Powered';
 
       if (!err && stdout) {
         try {
@@ -204,11 +267,14 @@ function getBatteryData() {
         }
       }
 
-      resolve({
+      const result = {
         percent,
         isCharging,
         statusText,
-      });
+      };
+      cachedBatteryData = result;
+      lastBatteryFetchTime = Date.now();
+      resolve(result);
     });
   });
 }
@@ -240,10 +306,14 @@ function checkMicViaCoreAudio() {
   });
 }
 
-// 3.5. Real-Time Camera and Microphone Usage via Windows Registry & WASAPI
+// 3.5. Real-Time Camera and Microphone Usage via Windows Registry & WASAPI (Zero-tasklist, Non-blocking)
+let cachedPrivacyData = null;
+let lastPrivacyFetchTime = 0;
+let isPrivacyFetchInFlight = false;
+
 function checkDeviceConsentStore(device) {
   return new Promise((resolve) => {
-    exec(`reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\${device}" /s`, (err, out) => {
+    exec(`reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\${device}" /s`, { timeout: 1500 }, (err, out) => {
       if (err || !out) return resolve(false);
       const blocks = out.split('\r\n\r\n');
       for (const block of blocks) {
@@ -254,15 +324,9 @@ function checkDeviceConsentStore(device) {
             const encodedPath = keyLine.split('\\NonPackaged\\')[1];
             if (encodedPath) {
               const rawPath = encodedPath.trim().replace(/#/g, '\\');
-              // Verify executable exists on disk to filter out orphaned legacy installations
-              if (!fs.existsSync(rawPath)) continue;
-              const exeName = path.basename(rawPath);
-              try {
-                const taskCheck = execSync(`tasklist /FI "IMAGENAME eq ${exeName}" /NH`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
-                if (taskCheck.toLowerCase().includes(exeName.toLowerCase())) {
-                  return resolve(true);
-                }
-              } catch (_) {}
+              if (fs.existsSync(rawPath)) {
+                return resolve(true);
+              }
             }
           } else {
             // Packaged UWP App: e.g. Microsoft.WindowsCamera...
@@ -279,19 +343,33 @@ function checkDeviceConsentStore(device) {
 }
 
 async function getCameraAndMicUsage() {
+  const now = Date.now();
+  if (cachedPrivacyData && (now - lastPrivacyFetchTime < 1200)) {
+    return cachedPrivacyData;
+  }
+  if (isPrivacyFetchInFlight && cachedPrivacyData) {
+    return cachedPrivacyData;
+  }
+
+  isPrivacyFetchInFlight = true;
   try {
     const [wasapiMic, consentMic, camInUse] = await Promise.all([
       checkMicViaCoreAudio(),
       checkDeviceConsentStore('microphone'),
       checkDeviceConsentStore('webcam'),
     ]);
-    return {
+    const result = {
       micInUse: wasapiMic.micInUse || consentMic,
       apps: wasapiMic.apps || [],
       camInUse,
     };
+    cachedPrivacyData = result;
+    lastPrivacyFetchTime = Date.now();
+    return result;
   } catch (_) {
-    return { micInUse: false, apps: [], camInUse: false };
+    return cachedPrivacyData || { micInUse: false, apps: [], camInUse: false };
+  } finally {
+    isPrivacyFetchInFlight = false;
   }
 }
 
@@ -354,4 +432,5 @@ module.exports = {
   getBatteryData,
   getCameraAndMicUsage,
   getFullTelemetry,
+  invalidateBluetoothCache,
 };
