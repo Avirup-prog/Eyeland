@@ -47,11 +47,14 @@ import {
   IconWave,
   IconSupport,
   IconX,
+  IconWeather,
+  IconMapPin,
 } from './Icons.jsx';
 import { getTranslations } from '../config/i18n.js';
 import { DEFAULT_ISLAND_DISPLAY, GLASS_COLOR_OPTIONS, hexToRgbTuple } from '../config/islandDisplay.js';
 import { extractDominantColor } from '../utils/colorExtractor.js';
 import { devanagariToHinglish, hasDevanagari } from '../utils/hindiRomanizer.js';
+import { fetchLiveWeather } from '../services/weatherService.js';
 
 function formatInline(text) {
   if (!text) return null;
@@ -682,9 +685,41 @@ export default function DynamicIsland({
   const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Live Weather Tracking State
+  const [weatherData, setWeatherData] = useState(null);
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+  const [isWeatherPopoverOpen, setIsWeatherPopoverOpen] = useState(false);
+  const weatherPopoverRef = useRef(null);
+
+  const refreshWeather = async (force = false) => {
+    if (displaySettings.showWeather === false) return;
+    setIsWeatherLoading(true);
+    try {
+      const w = await fetchLiveWeather({
+        city: displaySettings.weatherCity || '',
+        units: displaySettings.weatherUnits || 'celsius',
+        forceRefresh: force,
+      });
+      if (w) setWeatherData(w);
+    } catch (err) {
+      console.warn('[DynamicIsland] Weather fetch error:', err);
+    } finally {
+      setIsWeatherLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshWeather();
+    const iv = setInterval(() => {
+      refreshWeather();
+    }, 15 * 60 * 1000);
+    return () => clearInterval(iv);
+  }, [displaySettings.weatherCity, displaySettings.weatherUnits, displaySettings.showWeather]);
+
   const closeAllDropdowns = () => {
     setIsDropdownOpen(false);
     setIsOptionsMenuOpen(false);
+    setIsWeatherPopoverOpen(false);
     onDropdownChange?.(false);
   };
 
@@ -696,18 +731,22 @@ export default function DynamicIsland({
         setIsOptionsMenuOpen(false);
         onDropdownChange?.(false);
       }
+      if (weatherPopoverRef.current && !weatherPopoverRef.current.contains(e.target)) {
+        setIsWeatherPopoverOpen(false);
+      }
     };
-    if (isDropdownOpen || isOptionsMenuOpen) {
+    if (isDropdownOpen || isOptionsMenuOpen || isWeatherPopoverOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isDropdownOpen, isOptionsMenuOpen, onDropdownChange]);
+  }, [isDropdownOpen, isOptionsMenuOpen, isWeatherPopoverOpen, onDropdownChange]);
 
   // Reset menus if island collapses
   useEffect(() => {
     if (!isHovered && !isPinned) {
       setIsDropdownOpen(false);
       setIsOptionsMenuOpen(false);
+      setIsWeatherPopoverOpen(false);
       onDropdownChange?.(false);
     }
   }, [isHovered, isPinned, onDropdownChange]);
@@ -3746,7 +3785,7 @@ export default function DynamicIsland({
       {isExpanded && (
         <div className="w-full h-full px-3.5 pt-2.5 pb-2.5 flex flex-col justify-between animate-fadeIn overflow-hidden relative">
           {/* BACKDROP SCRIM: Smoothly dims & blurs entire island contents behind Wi-Fi, Bluetooth & Options menus */}
-          {(isDropdownOpen || isOptionsMenuOpen) && (
+          {(isDropdownOpen || isOptionsMenuOpen || isWeatherPopoverOpen) && (
             <div
               className="absolute inset-0 z-40 bg-black/85 backdrop-blur-sm rounded-[24px] animate-fadeIn cursor-pointer"
               onClick={closeAllDropdowns}
@@ -3783,20 +3822,161 @@ export default function DynamicIsland({
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span 
-                  onClick={() => {
-                    setModelStatus(
-                      modelStatus.includes('Gemini') 
-                        ? 'Claude Code / Codex • Ready' 
-                        : 'Gemini Flash Vision'
-                    );
-                  }}
-                  className="text-[10px] text-red-400/90 underline cursor-pointer hover:text-red-300 transition-colors"
-                >
-                  {modelStatus.includes('Gemini') ? 'Connect Claude Code or Codex' : 'Switch to Gemini Vision'}
-                </span>
-              </div>
+              {/* LIVE WEATHER WIDGET (Replaces Connect Claude Code / Codex) */}
+              {displaySettings.showWeather !== false && (
+                <div className="relative mt-1" ref={weatherPopoverRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsWeatherPopoverOpen((prev) => !prev);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/20 transition-all cursor-pointer group shadow-sm select-none"
+                    title="Click for full weather details & forecast"
+                  >
+                    {isWeatherLoading && !weatherData ? (
+                      <span className="text-[10px] text-neutral-400 font-mono flex items-center gap-1 animate-pulse">
+                        <span className="text-amber-400">⛅</span>
+                        <span>Checking weather...</span>
+                      </span>
+                    ) : weatherData ? (
+                      <>
+                        <span className="text-xs transition-transform group-hover:scale-110 drop-shadow-sm">
+                          {weatherData.icon || '⛅'}
+                        </span>
+                        <span className="text-[10.5px] font-bold text-white font-mono leading-none">
+                          {weatherData.temp}{weatherData.tempUnit || '°C'}
+                        </span>
+                        <span className="text-[8.5px] text-neutral-500">•</span>
+                        <span className="text-[10px] text-neutral-300 font-medium truncate max-w-[100px]">
+                          {weatherData.condition || 'Partly Cloudy'}
+                        </span>
+                        <span className="text-[8.5px] text-neutral-500">•</span>
+                        <span className="text-[10px] text-neutral-400 font-medium truncate max-w-[85px] flex items-center gap-0.5">
+                          <IconMapPin className="w-2.5 h-2.5 text-rose-400/90 shrink-0" />
+                          <span>{weatherData.city}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-neutral-400 font-mono flex items-center gap-1">
+                        <span>⛅</span>
+                        <span>Live Weather</span>
+                      </span>
+                    )}
+                  </button>
+
+                  {/* WEATHER DETAILS POPOVER CARD */}
+                  {isWeatherPopoverOpen && weatherData && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-7 z-[110] w-64 p-3.5 rounded-2xl bg-[#12131e] border border-white/20 shadow-[0_24px_60px_rgba(0,0,0,0.98)] backdrop-blur-xl animate-scaleIn select-none space-y-3 text-white"
+                      style={{ opacity: 1 }}
+                    >
+                      {/* Popover Header */}
+                      <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xl shrink-0">{weatherData.icon || '⛅'}</span>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-white truncate flex items-center gap-1">
+                              <span>{weatherData.city}</span>
+                              {weatherData.country && (
+                                <span className="text-[9px] font-mono text-neutral-400 font-normal">
+                                  ({weatherData.country})
+                                </span>
+                              )}
+                            </h4>
+                            <p className="text-[9.5px] text-neutral-400 leading-tight">
+                              {weatherData.condition}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsWeatherPopoverOpen(false)}
+                          className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                          title="Close"
+                        >
+                          <IconX className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* Temperature & Range */}
+                      <div className="flex items-baseline justify-between px-1">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black font-mono tracking-tight text-white">
+                            {weatherData.temp}
+                          </span>
+                          <span className="text-xs font-bold font-mono text-neutral-400">
+                            {weatherData.tempUnit}
+                          </span>
+                          <span className="text-[10px] text-neutral-400 ml-2 font-mono">
+                            Feels like {weatherData.feelsLike}{weatherData.tempUnit}
+                          </span>
+                        </div>
+
+                        <div className="text-[10px] font-mono text-neutral-400 bg-white/[0.05] px-2 py-0.5 rounded-lg border border-white/[0.06]">
+                          <span className="text-rose-300">H: {weatherData.high}°</span>
+                          <span className="mx-1">•</span>
+                          <span className="text-sky-300">L: {weatherData.low}°</span>
+                        </div>
+                      </div>
+
+                      {/* Weather Metrics Grid */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <div className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center gap-2">
+                          <span className="text-base">💧</span>
+                          <div>
+                            <div className="text-[8.5px] uppercase font-mono tracking-wider text-neutral-500 font-semibold">
+                              Humidity
+                            </div>
+                            <div className="text-xs font-bold font-mono text-neutral-200">
+                              {weatherData.humidity}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center gap-2">
+                          <span className="text-base">💨</span>
+                          <div>
+                            <div className="text-[8.5px] uppercase font-mono tracking-wider text-neutral-500 font-semibold">
+                              Wind Speed
+                            </div>
+                            <div className="text-xs font-bold font-mono text-neutral-200 truncate">
+                              {weatherData.windSpeed}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Popover Actions */}
+                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.08]">
+                        <button
+                          type="button"
+                          onClick={() => refreshWeather(true)}
+                          disabled={isWeatherLoading}
+                          className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 hover:text-white text-[9.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <IconRefresh className={`w-3 h-3 ${isWeatherLoading ? 'animate-spin text-amber-400' : ''}`} />
+                          <span>{isWeatherLoading ? 'Updating...' : 'Refresh'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsWeatherPopoverOpen(false);
+                            window.electronAPI?.openDashboard?.();
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[9.5px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <span>Change City in Hub</span>
+                          <span className="text-[8.5px]">→</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 relative" ref={dropdownRef}>

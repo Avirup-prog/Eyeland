@@ -128,6 +128,9 @@ const DEFAULT_ISLAND_DISPLAY = {
   showLyrics: true,
   wordByWord: false,
   showVolumeBar: true,
+  showWeather: true,
+  weatherCity: '',
+  weatherUnits: 'celsius',
 };
 let islandDisplaySettings = { ...DEFAULT_ISLAND_DISPLAY };
 

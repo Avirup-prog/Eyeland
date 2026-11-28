@@ -38,11 +38,14 @@ import {
   IconSleep,
   IconWave,
   IconX,
+  IconWeather,
+  IconMapPin,
 } from './Icons.jsx';
 import { EYELAND_THEMES, DEFAULT_COMPANION_NAME, getThemeByKey } from '../config/themes.js';
 import { COMPANION_DESIGNS, DEFAULT_COMPANION_DESIGN, getDesignById } from '../config/companionDesigns.js';
 import { SUPPORTED_LANGUAGES, DEFAULT_GENERAL_SETTINGS, getTranslations } from '../config/i18n.js';
 import { DEFAULT_ISLAND_DISPLAY, GLASS_COLOR_OPTIONS, hexToRgbTuple } from '../config/islandDisplay.js';
+import { fetchLiveWeather } from '../services/weatherService.js';
 
 export const HUB_THEMES = EYELAND_THEMES;
 
@@ -248,6 +251,34 @@ export default function DashboardApp() {
   });
   const [connectedDisplays, setConnectedDisplays] = useState([]);
   const t = getTranslations(draftGeneralSettings.language);
+
+  // Live Weather Preview in Hub
+  const [hubWeather, setHubWeather] = useState(null);
+  const [isHubWeatherLoading, setIsHubWeatherLoading] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      setIsHubWeatherLoading(true);
+      try {
+        const w = await fetchLiveWeather({
+          city: draftIslandDisplay.weatherCity || '',
+          units: draftIslandDisplay.weatherUnits || 'celsius',
+        });
+        if (!isCancelled && w) {
+          setHubWeather(w);
+        }
+      } catch (_) {
+      } finally {
+        if (!isCancelled) setIsHubWeatherLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [draftIslandDisplay.weatherCity, draftIslandDisplay.weatherUnits]);
 
   // Live Clock & User Info
   useEffect(() => {
@@ -514,7 +545,10 @@ export default function DashboardApp() {
     String(draftIslandDisplay.screenId) !== String(savedIslandDisplay.screenId) ||
     Boolean(draftIslandDisplay.showLyrics) !== Boolean(savedIslandDisplay.showLyrics) ||
     Boolean(draftIslandDisplay.wordByWord) !== Boolean(savedIslandDisplay.wordByWord) ||
-    Boolean(draftIslandDisplay.showVolumeBar) !== Boolean(savedIslandDisplay.showVolumeBar);
+    Boolean(draftIslandDisplay.showVolumeBar) !== Boolean(savedIslandDisplay.showVolumeBar) ||
+    Boolean(draftIslandDisplay.showWeather) !== Boolean(savedIslandDisplay.showWeather) ||
+    String(draftIslandDisplay.weatherCity || '') !== String(savedIslandDisplay.weatherCity || '') ||
+    String(draftIslandDisplay.weatherUnits || 'celsius') !== String(savedIslandDisplay.weatherUnits || 'celsius');
 
   const unsavedLabels = [];
   if (isNameDirty) unsavedLabels.push('Companion Name');
@@ -3903,6 +3937,206 @@ export default function DashboardApp() {
                       />
                     </button>
                   </div>
+                </div>
+
+                {/* CARD 5: LIVE WEATHER & LOCATION SETTINGS */}
+                <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/[0.08] backdrop-blur-md space-y-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <IconWeather className="w-5 h-5 text-amber-400" />
+                        <h3 className="text-base font-bold text-white tracking-tight">Weather & Location</h3>
+                        <span
+                          className="text-[10px] font-mono px-2 py-0.5 rounded-full border font-semibold uppercase"
+                          style={{
+                            backgroundColor: currentTheme.softBg,
+                            color: currentTheme.accent,
+                            borderColor: currentTheme.border,
+                          }}
+                        >
+                          Live Sync
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-400">
+                        Display real-time temperature, condition icons, and atmospheric metrics directly on Eyeland
+                      </p>
+                    </div>
+
+                    {/* Master Switch: Show Weather Widget */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={draftIslandDisplay.showWeather !== false}
+                      onClick={() =>
+                        setDraftIslandDisplay((p) => ({ ...p, showWeather: p.showWeather === false ? true : false }))
+                      }
+                      className={`w-12 h-6 rounded-full p-0.5 border transition-all cursor-pointer shrink-0 flex items-center ${
+                        draftIslandDisplay.showWeather !== false
+                          ? 'justify-end'
+                          : 'justify-start bg-neutral-800/90 border-white/15'
+                      }`}
+                      style={
+                        draftIslandDisplay.showWeather !== false
+                          ? {
+                              backgroundColor: currentTheme.softBg,
+                              borderColor: currentTheme.border,
+                              boxShadow: `0 0 14px ${currentTheme.glow}`,
+                            }
+                          : undefined
+                      }
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full shadow-md transition-all"
+                        style={{
+                          backgroundColor: draftIslandDisplay.showWeather !== false ? currentTheme.accent : '#a3a3a3',
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  {draftIslandDisplay.showWeather !== false && (
+                    <div className="space-y-5 pt-2 border-t border-white/[0.06] animate-fadeIn">
+                      {/* 1. CITY / LOCATION INPUT */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
+                            <IconMapPin className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Weather Location</span>
+                          </label>
+                          <span className="text-[10.5px] font-mono text-neutral-500">
+                            {draftIslandDisplay.weatherCity?.trim() ? 'Custom Location' : 'Auto-Detect (Current Location)'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={draftIslandDisplay.weatherCity || ''}
+                              onChange={(e) =>
+                                setDraftIslandDisplay((p) => ({ ...p, weatherCity: e.target.value }))
+                              }
+                              placeholder="Auto-Detect (e.g. Tokyo, London, Bengaluru, New York)"
+                              className="w-full bg-[#12131c] border border-white/15 focus:border-white/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 outline-none transition-all font-medium"
+                            />
+                            {draftIslandDisplay.weatherCity?.trim() && (
+                              <button
+                                type="button"
+                                onClick={() => setDraftIslandDisplay((p) => ({ ...p, weatherCity: '' }))}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white p-1 cursor-pointer"
+                                title="Clear to Auto-Detect"
+                              >
+                                <IconX className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setDraftIslandDisplay((p) => ({ ...p, weatherCity: '' }))}
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 active:scale-95 ${
+                              !draftIslandDisplay.weatherCity?.trim()
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                : 'bg-white/[0.05] hover:bg-white/10 text-neutral-300 border-white/10'
+                            }`}
+                            title="Reset to automatic current location detection"
+                          >
+                            <IconRefresh className={`w-3.5 h-3.5 ${isHubWeatherLoading ? 'animate-spin' : ''}`} />
+                            <span>Auto-Detect</span>
+                          </button>
+                        </div>
+
+                        {/* Quick City Suggestion Chips */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          <span className="text-[10px] text-neutral-500 font-mono mr-1">Quick Cities:</span>
+                          {['Bengaluru', 'Tokyo', 'London', 'New York', 'Kolkata', 'Paris', 'Dubai', 'Sydney'].map((city) => (
+                            <button
+                              key={city}
+                              type="button"
+                              onClick={() => setDraftIslandDisplay((p) => ({ ...p, weatherCity: city }))}
+                              className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer ${
+                                (draftIslandDisplay.weatherCity || '').toLowerCase() === city.toLowerCase()
+                                  ? 'bg-white text-black font-bold shadow-sm'
+                                  : 'bg-white/[0.05] hover:bg-white/10 text-neutral-300 border border-white/[0.06]'
+                              }`}
+                            >
+                              {city}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 2. TEMPERATURE UNITS (°C vs °F) */}
+                      <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/[0.06]">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-bold text-white tracking-tight">Temperature Unit</h4>
+                          <p className="text-xs text-neutral-400">Choose between Celsius and Fahrenheit</p>
+                        </div>
+
+                        <div className="flex items-center p-1 rounded-xl bg-[#12131c] border border-white/10 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setDraftIslandDisplay((p) => ({ ...p, weatherUnits: 'celsius' }))}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              (draftIslandDisplay.weatherUnits || 'celsius') === 'celsius'
+                                ? 'bg-white text-black font-bold shadow-sm'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            °C Celsius
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDraftIslandDisplay((p) => ({ ...p, weatherUnits: 'fahrenheit' }))}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              draftIslandDisplay.weatherUnits === 'fahrenheit'
+                                ? 'bg-white text-black font-bold shadow-sm'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            °F Fahrenheit
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 3. LIVE WEATHER PREVIEW CARD */}
+                      <div className="p-3.5 rounded-xl bg-[#141520] border border-white/10 flex items-center justify-between gap-4 shadow-sm">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-2xl shrink-0">
+                            {hubWeather?.icon || '⛅'}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base font-bold text-white font-mono">
+                                {hubWeather ? `${hubWeather.temp}${hubWeather.tempUnit}` : '--'}
+                              </span>
+                              <span className="text-xs font-medium text-neutral-200 truncate">
+                                {hubWeather?.condition || 'Checking live weather...'}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-neutral-400 font-mono truncate flex items-center gap-1.5 mt-0.5">
+                              <span>{hubWeather?.city || draftIslandDisplay.weatherCity || 'Auto-Detecting'}</span>
+                              {hubWeather?.country && <span>• {hubWeather.country}</span>}
+                              {hubWeather && (
+                                <span>• Feels like {hubWeather.feelsLike}{hubWeather.tempUnit}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-block font-semibold">
+                            {isHubWeatherLoading ? 'Syncing...' : 'Live Connected'}
+                          </div>
+                          {hubWeather && (
+                            <div className="text-[9px] text-neutral-400 font-mono mt-1">
+                              Wind: {hubWeather.windSpeed} • Hum: {hubWeather.humidity}%
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
               </div>

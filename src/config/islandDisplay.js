@@ -10,6 +10,9 @@ export const DEFAULT_ISLAND_DISPLAY = {
   showLyrics: true, // boolean
   wordByWord: false, // boolean (karaoke word-by-word illumination)
   showVolumeBar: true, // boolean
+  showWeather: true, // boolean (weather widget in expanded island)
+  weatherCity: '', // string ('' for auto-detect or specific city name)
+  weatherUnits: 'celsius', // 'celsius' | 'fahrenheit'
 };
 
 export const GLASS_COLOR_OPTIONS = [
